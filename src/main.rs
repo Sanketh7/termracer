@@ -1,10 +1,10 @@
 use std::io;
-use std::io::Write;
+use std::io::{Write, Error};
 use std::result::Result;
 use crossterm::{
     ExecutableCommand, 
     event, event::{Event, KeyCode},
-    terminal,
+    terminal, terminal::{EnterAlternateScreen, LeaveAlternateScreen},
 };
 
 mod line;
@@ -12,11 +12,11 @@ mod line_block;
 
 use line_block::LineBlock;
 
-fn main() -> Result<(), io::Error> {
+fn main() -> Result<(), Error> {
     terminal::enable_raw_mode()?;
 
     let mut buf = io::stdout();
-    buf.execute(terminal::EnterAlternateScreen)?;
+    buf.execute(EnterAlternateScreen)?;
 
     let mut block = LineBlock::new();
     block.new_line("Hello, World!".to_string());
@@ -30,6 +30,7 @@ fn main() -> Result<(), io::Error> {
                 match key_event.code {
                     KeyCode::Esc => break,
                     KeyCode::Backspace => block.process_backspace(&mut buf)?,
+                    KeyCode::Enter => block.process_enter(&mut buf)?,
                     KeyCode::Char(c) => block.process_character(c, &mut buf)?,
                     _ => (),
                 }
@@ -40,6 +41,6 @@ fn main() -> Result<(), io::Error> {
     }
 
     terminal::disable_raw_mode()?;
-    buf.execute(terminal::LeaveAlternateScreen)?;
+    buf.execute(LeaveAlternateScreen)?;
     Ok(())
 }

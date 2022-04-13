@@ -1,5 +1,4 @@
-use std::io;
-use std::io::Write;
+use std::io::{Write, Error};
 use std::result::Result;
 
 use super::line::Line;
@@ -27,7 +26,7 @@ impl LineBlock {
         }
     }
 
-    pub fn print<T: Write>(&self, buf: &mut T) -> Result<(), io::Error> {
+    pub fn print<T: Write>(&self, buf: &mut T) -> Result<(), Error> {
         for line in self.lines.iter() {
             line.print(buf)?;
         }
@@ -37,12 +36,28 @@ impl LineBlock {
         Ok(())
     }
 
-    pub fn process_character<T: Write>(&mut self, c: char, buf: &mut T) -> Result<(), io::Error> {
+    pub fn process_character<T: Write>(&mut self, c: char, buf: &mut T) -> Result<(), Error> {
         if self.current_line_index == None {
             return Ok(())
         }
 
         self.lines.get_mut(self.current_line_index.unwrap()).unwrap().process_character(c, buf)?;
+        Ok(())
+    }
+
+    pub fn process_backspace<T: Write>(&mut self, buf: &mut T) -> Result<(), Error> {
+        if self.current_line_index == None {
+            return Ok(())
+        }
+
+        self.lines.get_mut(self.current_line_index.unwrap()).unwrap().process_backspace(buf)
+    }
+
+    pub fn process_enter<T: Write>(&mut self, buf: &mut T) -> Result<(), Error> {
+        if self.current_line_index == None {
+            return Ok(())
+        }
+
         if self.lines.get(self.current_line_index.unwrap()).unwrap().is_all_correct() {
             if (self.current_line_index.unwrap() + 1) < self.lines.len() {
                 self.current_line_index = Some(self.current_line_index.unwrap() + 1);
@@ -50,13 +65,5 @@ impl LineBlock {
             }
         }
         Ok(())
-    }
-
-    pub fn process_backspace<T: Write>(&mut self, buf: &mut T) -> Result<(), io::Error> {
-        if self.current_line_index == None {
-            return Ok(())
-        }
-
-        self.lines.get_mut(self.current_line_index.unwrap()).unwrap().process_backspace(buf)
     }
 }

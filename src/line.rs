@@ -1,5 +1,4 @@
-use std::io;
-use std::io::Write;
+use std::io::{Write, Error};
 use std::result::Result;
 use crossterm::{
     QueueableCommand, 
@@ -27,19 +26,19 @@ impl Line {
         }
     }
 
-    pub fn move_to_user_column<T: Write>(&self, buf: &mut T) -> Result<(), io::Error> {
+    pub fn move_to_user_column<T: Write>(&self, buf: &mut T) -> Result<(), Error> {
         buf.queue(cursor::MoveTo(self.user_column as u16, self.row as u16))?;
         Ok(())
     }
 
-    pub fn print<T: Write>(&self, buf: &mut T) -> Result<(), io::Error> {
+    pub fn print<T: Write>(&self, buf: &mut T) -> Result<(), Error> {
         self.move_to_user_column(buf)?;
         buf.queue(style::Print(self.text.clone()))?;
         self.move_to_user_column(buf)?;
         Ok(())
     }
 
-    pub fn process_character<T: Write>(&mut self, c: char, buf: &mut T) -> Result<(), io::Error> {
+    pub fn process_character<T: Write>(&mut self, c: char, buf: &mut T) -> Result<(), Error> {
         // don't let the line overflow
         if self.user_column as usize >= self.text.len() {
             return Ok(())
@@ -61,7 +60,7 @@ impl Line {
         Ok(())
     }
 
-    pub fn process_backspace<T: Write>(&mut self, buf: &mut T) -> Result<(), io::Error> {
+    pub fn process_backspace<T: Write>(&mut self, buf: &mut T) -> Result<(), Error> {
         // only replace character if in-bounds 
         if self.user_column < self.text.len() {
             self.move_to_user_column(buf)?;
