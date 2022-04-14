@@ -4,6 +4,7 @@ use crossterm::{
     QueueableCommand, 
     cursor, 
     style, style::{Stylize, Color},
+    event::KeyCode
 };
 
 pub struct Line {
@@ -38,7 +39,15 @@ impl Line {
         Ok(())
     }
 
-    pub fn process_character<T: Write>(&mut self, c: char, buf: &mut T) -> Result<(), Error> {
+    pub fn process_key_code<T: Write>(&mut self, key_code: KeyCode, buf: &mut T) -> Result<(), Error> {
+        match key_code {
+            KeyCode::Char(c) => self.process_character(c, buf),
+            KeyCode::Backspace => self.process_backspace(buf),
+            _ => Ok(())
+        }
+    }
+
+    fn process_character<T: Write>(&mut self, c: char, buf: &mut T) -> Result<(), Error> {
         // don't let the line overflow
         if self.user_column as usize >= self.text.len() {
             return Ok(())
@@ -60,7 +69,7 @@ impl Line {
         Ok(())
     }
 
-    pub fn process_backspace<T: Write>(&mut self, buf: &mut T) -> Result<(), Error> {
+    fn process_backspace<T: Write>(&mut self, buf: &mut T) -> Result<(), Error> {
         // only replace character if in-bounds 
         if self.user_column < self.text.len() {
             self.move_to_user_column(buf)?;

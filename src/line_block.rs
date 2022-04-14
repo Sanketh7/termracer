@@ -1,5 +1,6 @@
 use std::io::{Write, Error};
 use std::result::Result;
+use crossterm::event::KeyCode;
 
 use super::line::Line;
 
@@ -36,34 +37,30 @@ impl LineBlock {
         Ok(())
     }
 
-    pub fn process_character<T: Write>(&mut self, c: char, buf: &mut T) -> Result<(), Error> {
-        if self.current_line_index == None {
-            return Ok(())
+    pub fn process_key_code<T: Write>(&mut self, key_code: KeyCode, buf: &mut T) -> Result<(), Error> {
+        match self.current_line_index {
+            Some(current_line_index) => {
+                match key_code {
+                    KeyCode::Enter => self.process_enter(buf),
+                    _ => self.lines.get_mut(current_line_index).unwrap().process_key_code(key_code, buf)
+                }
+            },
+            None => Ok(())
         }
-
-        self.lines.get_mut(self.current_line_index.unwrap()).unwrap().process_character(c, buf)?;
-        Ok(())
     }
 
-    pub fn process_backspace<T: Write>(&mut self, buf: &mut T) -> Result<(), Error> {
-        if self.current_line_index == None {
-            return Ok(())
+    fn process_enter<T: Write>(&mut self, buf: &mut T) -> Result<(), Error> {
+        match self.current_line_index {
+            Some(current_line_index) => {
+                if self.lines.get(current_line_index).unwrap().is_all_correct() {
+                    if (self.current_line_index.unwrap() + 1) < self.lines.len() {
+                        self.current_line_index = Some(self.current_line_index.unwrap() + 1);
+                        self.lines.get(self.current_line_index.unwrap()).unwrap().move_to_user_column(buf)?;
+                    }
+                }
+                Ok(())
+            },
+            None => Ok(())
         }
-
-        self.lines.get_mut(self.current_line_index.unwrap()).unwrap().process_backspace(buf)
-    }
-
-    pub fn process_enter<T: Write>(&mut self, buf: &mut T) -> Result<(), Error> {
-        if self.current_line_index == None {
-            return Ok(())
-        }
-
-        if self.lines.get(self.current_line_index.unwrap()).unwrap().is_all_correct() {
-            if (self.current_line_index.unwrap() + 1) < self.lines.len() {
-                self.current_line_index = Some(self.current_line_index.unwrap() + 1);
-                self.lines.get(self.current_line_index.unwrap()).unwrap().move_to_user_column(buf)?;
-            }
-        }
-        Ok(())
     }
 }

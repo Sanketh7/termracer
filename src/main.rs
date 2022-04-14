@@ -9,6 +9,7 @@ use crossterm::{
 
 mod line;
 mod line_block;
+mod session;
 
 use line_block::LineBlock;
 
@@ -29,10 +30,7 @@ fn main() -> Result<(), Error> {
             Event::Key(key_event) => {
                 match key_event.code {
                     KeyCode::Esc => break,
-                    KeyCode::Backspace => block.process_backspace(&mut buf)?,
-                    KeyCode::Enter => block.process_enter(&mut buf)?,
-                    KeyCode::Char(c) => block.process_character(c, &mut buf)?,
-                    _ => (),
+                    key_code => block.process_key_code(key_code, &mut buf)?,
                 }
                 buf.flush()?;
             }
