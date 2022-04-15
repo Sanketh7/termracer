@@ -1,17 +1,21 @@
-use std::io;
-use std::io::{Write, Error};
-use std::result::Result;
 use crossterm::{
-    ExecutableCommand, 
-    event, event::{Event, KeyCode},
-    terminal, terminal::{EnterAlternateScreen, LeaveAlternateScreen},
+    event,
+    event::{Event, KeyCode},
+    terminal,
+    terminal::{EnterAlternateScreen, LeaveAlternateScreen},
+    ExecutableCommand,
 };
+use std::io;
+use std::io::{Error, Write};
 
 mod line;
 mod line_block;
 mod session;
+mod stats_line;
+mod widget;
 
-use line_block::LineBlock;
+use session::Session;
+use widget::{Widget, WidgetProps};
 
 fn main() -> Result<(), Error> {
     terminal::enable_raw_mode()?;
@@ -19,22 +23,31 @@ fn main() -> Result<(), Error> {
     let mut buf = io::stdout();
     buf.execute(EnterAlternateScreen)?;
 
-    let mut block = LineBlock::new();
-    block.new_line("Hello, World!".to_string());
-    block.new_line("Bye, Moon!".to_string());
-    block.print(&mut buf)?;
+    let mut session = Session::new(
+        &vec![
+            "a a a a a a a a a a a a a a a a a a a a a a a a a a a ".to_string(),
+            "Ut eget suscipit lectus, id egestas neque. Mauris at metus ipsum.".to_string(),
+        ],
+        WidgetProps {
+            row_offset: 0,
+            column_offset: 0,
+        },
+    );
+    session.print(&mut buf)?;
     buf.flush()?;
+    session.start();
 
     loop {
         match event::read()? {
             Event::Key(key_event) => {
                 match key_event.code {
                     KeyCode::Esc => break,
-                    key_code => block.process_key_code(key_code, &mut buf)?,
+                    key_code => session.process_key_code(key_code, &mut buf)?,
                 }
+                session.refresh(&mut buf)?;
                 buf.flush()?;
             }
-            _ => ()
+            _ => (),
         }
     }
 
