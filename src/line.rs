@@ -102,7 +102,7 @@ impl Widget for Line {
     fn print<T: Write>(&self, buf: &mut T) -> Result<(), Error> {
         self.move_to_user_column(buf)?;
         buf.queue(style::Print(self.text.clone()))?;
-        self.move_to_user_column(buf)?;
+        // self.move_to_user_column(buf)?;
         Ok(())
     }
 
