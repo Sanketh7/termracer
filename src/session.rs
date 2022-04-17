@@ -52,6 +52,7 @@ impl Session {
 
                 buf.queue(SavePosition)?; // save and restore position to keep cursor inside line block
                 self.stats_line.print(buf)?;
+                // self.print(buf)?;
                 buf.queue(RestorePosition)?;
                 Ok(())
             }

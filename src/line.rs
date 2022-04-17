@@ -101,8 +101,28 @@ impl Line {
 impl Widget for Line {
     fn print<T: Write>(&self, buf: &mut T) -> Result<(), Error> {
         self.move_to_user_column(buf)?;
-        buf.queue(style::Print(self.text.clone()))?;
-        // self.move_to_user_column(buf)?;
+
+        let mut index = 0;
+        for c in self.user_text.chars() {
+            match self.is_correct.get(index) {
+                Some(Some(b)) => {
+                    buf.queue(style::PrintStyledContent(match c {
+                        ' ' => c.on(if *b { Color::Green } else { Color::Red }),
+                        _ => c.with(if *b { Color::Green } else { Color::Red }),
+                    }))?;
+                }
+                Some(None) => {
+                    buf.queue(style::Print(c))?;
+                }
+                _ => (),
+            };
+            index += 1;
+        }
+
+        buf.queue(style::Print(
+            self.text.chars().skip(index).collect::<String>(),
+        ))?;
+
         Ok(())
     }
 
