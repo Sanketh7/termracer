@@ -1,12 +1,17 @@
 use crossterm::{
     event,
     event::{Event, KeyCode},
+    terminal,
     terminal::{EnterAlternateScreen, LeaveAlternateScreen},
     ExecutableCommand,
 };
 use std::io;
 use std::io::{Error, Stdout, Write};
+use std::thread;
+use std::thread::JoinHandle;
 
+use super::command_parser;
+use super::command_parser::Command;
 use super::session::Session;
 use super::widget::{Widget, WidgetProps};
 
@@ -34,6 +39,7 @@ impl App {
                 column_offset: 0,
             },
         ));
+        terminal::enable_raw_mode()?;
         self.buf.execute(EnterAlternateScreen)?;
         self.session.as_mut().unwrap().start();
         self.session.as_mut().unwrap().print(&mut self.buf)?;
@@ -42,9 +48,10 @@ impl App {
     }
 
     // used when a session terminates forcefully
-    pub fn terminate_session(&mut self) -> Result<(), Error> {
+    fn force_end_session(&mut self) -> Result<(), Error> {
         self.session = None;
         self.buf.execute(LeaveAlternateScreen)?;
+        terminal::disable_raw_mode()?;
         Ok(())
     }
 
@@ -54,7 +61,7 @@ impl App {
                 match event::read()? {
                     Event::Key(key_event) => match key_event.code {
                         KeyCode::Esc => {
-                            self.terminate_session()?;
+                            self.force_end_session()?;
                             break;
                         }
                         key_code => session.process_key_code(key_code, &mut self.buf)?,
@@ -64,7 +71,22 @@ impl App {
                 session.refresh(&mut self.buf)?;
                 self.buf.flush()?
             },
-            None => (),
+            None => loop {
+                print!("> ");
+                io::stdout().flush()?;
+
+                let mut line = String::new();
+                io::stdin().read_line(&mut line)?;
+                line = line.trim_end().to_string();
+
+                match command_parser::parse_string(line) {
+                    Some(Command::StartSession) => {
+                        self.start_new_session()?;
+                        break;
+                    }
+                    None => println!("Invalid command."),
+                }
+            },
         }
         Ok(())
     }
