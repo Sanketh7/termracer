@@ -13,10 +13,12 @@ use super::command_parser;
 use super::command_parser::Command;
 use super::session::Session;
 use super::widget::{Widget, WidgetProps};
+use super::word_generator::WordGenerator;
 
 pub struct App {
     buf: Stdout,
     session: Option<Session>, // None when no session is active
+    word_generator: WordGenerator,
 }
 
 impl App {
@@ -24,21 +26,22 @@ impl App {
         App {
             buf: io::stdout(),
             session: None,
+            word_generator: WordGenerator::new(),
         }
     }
 
     pub fn start_new_session(&mut self) -> Result<(), Error> {
+        let text: Vec<String> = (0..5)
+            .map(|_| self.word_generator.get_random_words(10).join(" "))
+            .collect();
         self.session = Some(Session::new(
-            &vec![
-                "little between not small those here go high use world with out they".to_string(),
-                "small get such so course right few one hold much when never late".to_string(),
-                "old each end help what well off will high come possible we ask who".to_string(),
-            ],
+            &text,
             WidgetProps {
                 row_offset: 0,
                 column_offset: 0,
             },
         ));
+
         terminal::enable_raw_mode()?;
         self.buf.execute(EnterAlternateScreen)?;
         self.session.as_mut().unwrap().start();

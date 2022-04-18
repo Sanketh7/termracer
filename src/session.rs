@@ -6,11 +6,10 @@ use crossterm::{
 use std::io::{Error, Write};
 use std::time::Instant;
 
+use super::constants::CHARACTERS_PER_WORD;
 use super::line_block::LineBlock;
 use super::stats_line::StatsLine;
 use super::widget::{Widget, WidgetProps};
-
-const CHARACTERS_PER_WORD: usize = 5;
 
 pub struct Session {
     line_block: LineBlock,
