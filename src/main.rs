@@ -1,19 +1,18 @@
-use std::io::Error;
-use std::thread;
+use std::error;
 
 mod app;
 mod command_parser;
 mod line;
 mod line_block;
 mod session;
+mod session_event_handler;
 mod stats_line;
 mod widget;
 
 use app::App;
 
-fn main() -> Result<(), Error> {
+fn main() -> Result<(), Box<dyn error::Error>> {
     let mut app = App::new();
-    // app.start_new_session()?;
     app.event_loop()?;
 
     Ok(())
