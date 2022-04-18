@@ -13,7 +13,6 @@ use super::widget::{Widget, WidgetProps};
 pub struct Line {
     text: String,
     length: usize,
-    user_text: String,
     is_correct: Vec<Option<bool>>, // None if no input yet
     row: usize,
     user_column: usize,
@@ -26,7 +25,6 @@ impl Line {
         Line {
             text,
             length,
-            user_text: String::new(),
             is_correct: vec![None; length],
             row,            // 0-indexed
             user_column: 0, // 0-indexed
@@ -61,13 +59,13 @@ impl Line {
 
         self.move_to_user_column(buf)?;
 
-        let is_correct = c == self.text.chars().nth(self.user_column).unwrap();
-        buf.queue(style::PrintStyledContent(match c {
-            ' ' => c.on(if is_correct { Color::Green } else { Color::Red }),
-            _ => c.with(if is_correct { Color::Green } else { Color::Red }),
+        let correct_char = self.text.chars().nth(self.user_column).unwrap();
+        let is_correct = c == correct_char;
+        buf.queue(style::PrintStyledContent(match correct_char {
+            ' ' => correct_char.on(if is_correct { Color::Green } else { Color::Red }),
+            _ => correct_char.with(if is_correct { Color::Green } else { Color::Red }),
         }))?;
         self.is_correct[self.user_column] = Some(is_correct);
-        self.user_text.push(c);
         self.user_column += 1;
 
         Ok(())
@@ -86,10 +84,10 @@ impl Line {
             buf.queue(style::Print(
                 self.text.chars().nth(self.user_column).unwrap(),
             ))?;
+            self.is_correct[self.user_column] = None;
             self.move_to_user_column(buf)?;
         }
 
-        self.user_text.pop();
         Ok(())
     }
 
@@ -103,7 +101,7 @@ impl Widget for Line {
         self.move_to_user_column(buf)?;
 
         let mut index = 0;
-        for c in self.user_text.chars() {
+        for c in self.text.chars() {
             match self.is_correct.get(index) {
                 Some(Some(b)) => {
                     buf.queue(style::PrintStyledContent(match c {
@@ -118,10 +116,6 @@ impl Widget for Line {
             };
             index += 1;
         }
-
-        buf.queue(style::Print(
-            self.text.chars().skip(index).collect::<String>(),
-        ))?;
 
         Ok(())
     }
