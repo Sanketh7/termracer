@@ -83,6 +83,9 @@ impl App {
                             self.start_new_session()?;
                             continue;
                         }
+                        Some(Command::Quit) => {
+                            break;
+                        }
                         None => println!("Invalid command."),
                     }
                 }
