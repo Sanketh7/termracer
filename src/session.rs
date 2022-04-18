@@ -10,6 +10,7 @@ use super::constants::CHARACTERS_PER_WORD;
 use super::line_block::LineBlock;
 use super::stats_line::StatsLine;
 use super::widget::{Widget, WidgetProps};
+use super::word_generator::WordGenerator;
 
 pub struct Session {
     line_block: LineBlock,
@@ -20,7 +21,12 @@ pub struct Session {
 }
 
 impl Session {
-    pub fn new(text_vec: &Vec<String>, widget_props: WidgetProps) -> Self {
+    pub fn new(widget_props: WidgetProps) -> Self {
+        let word_generator = WordGenerator::new();
+
+        let text_vec: Vec<String> = (0..5)
+            .map(|_| word_generator.get_random_words(10).join(" "))
+            .collect();
         let mut line_block = LineBlock::new(widget_props);
         for text in text_vec.iter() {
             line_block.new_line(text.to_string());
