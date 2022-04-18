@@ -52,6 +52,8 @@ impl App {
         self.session = None;
         self.buf.execute(LeaveAlternateScreen)?;
         terminal::disable_raw_mode()?;
+
+        println!("Session aborted!");
         Ok(())
     }
 
@@ -84,7 +86,7 @@ impl App {
                         Event::Key(key_event) => match key_event.code {
                             KeyCode::Esc => {
                                 self.force_end_session()?;
-                                break;
+                                continue;
                             }
                             key_code => session.process_key_code(key_code, &mut self.buf)?,
                         },
