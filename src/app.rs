@@ -1,28 +1,21 @@
 use crossterm::{
-    event::KeyCode,
+    event,
+    event::{Event, KeyCode},
     terminal,
     terminal::{EnterAlternateScreen, LeaveAlternateScreen},
     ExecutableCommand,
 };
-use std::error;
 use std::io;
-use std::io::{Stdout, Write};
-use std::mem;
-use std::sync::mpsc;
-use std::sync::mpsc::Receiver;
-use std::thread::JoinHandle;
+use std::io::{Error, Stdout, Write};
 
 use super::command_parser;
 use super::command_parser::Command;
 use super::session::Session;
-use super::session_event_handler;
 use super::widget::{Widget, WidgetProps};
 
 pub struct App {
     buf: Stdout,
     session: Option<Session>, // None when no session is active
-    session_event_handler_receiver: Option<Receiver<KeyCode>>,
-    session_event_handler_handle: Option<JoinHandle<()>>,
 }
 
 impl App {
@@ -30,14 +23,10 @@ impl App {
         App {
             buf: io::stdout(),
             session: None,
-            session_event_handler_receiver: None,
-            session_event_handler_handle: None,
         }
     }
 
-    fn start_new_session(&mut self) -> Result<(), Box<dyn error::Error>> {
-        let (transmitter, receiver) = mpsc::channel::<KeyCode>();
-
+    pub fn start_new_session(&mut self) -> Result<(), Error> {
         self.session = Some(Session::new(
             &vec![
                 "a a a a a a a a a a a a a a a a a a a a a a a a a a a ".to_string(),
@@ -48,69 +37,54 @@ impl App {
                 column_offset: 0,
             },
         ));
-        self.session_event_handler_receiver = Some(receiver);
-        self.session_event_handler_handle = Some(session_event_handler::spawn_thread(transmitter)?);
-
-        // set up terminal
         terminal::enable_raw_mode()?;
         self.buf.execute(EnterAlternateScreen)?;
-
-        // print and start session
+        self.session.as_mut().unwrap().start();
         self.session.as_mut().unwrap().print(&mut self.buf)?;
         self.buf.flush()?;
-        self.session.as_mut().unwrap().start();
         Ok(())
     }
 
-    pub fn event_loop(&mut self) -> Result<(), Box<dyn error::Error>> {
+    // used when a session terminates forcefully
+    fn force_end_session(&mut self) -> Result<(), Error> {
+        self.session = None;
+        self.buf.execute(LeaveAlternateScreen)?;
+        terminal::disable_raw_mode()?;
+        Ok(())
+    }
+
+    pub fn event_loop(&mut self) -> Result<(), Error> {
         loop {
-            if let Some(session_event_handler_receiver) = &self.session_event_handler_receiver {
-                // there MUST exist an active session
-                assert!(self.session.is_some());
-                if let Ok(msg) = session_event_handler_receiver.try_recv() {
-                    // tr_recv() is non-blocking
-                    match msg {
-                        KeyCode::Esc => {
-                            // note that the thread loop will break on
-                            // KeyCode::Esc
-                            let handle = mem::replace(&mut self.session_event_handler_handle, None);
-                            handle.unwrap().join().unwrap();
-                            assert!(self.session_event_handler_handle.is_none());
-
-                            self.session = None;
-                            self.session_event_handler_receiver = None;
-
-                            self.buf.execute(LeaveAlternateScreen)?;
-                            terminal::disable_raw_mode()?;
-                            break;
-                        }
-                        _ => {
-                            self.session
-                                .as_mut()
-                                .unwrap()
-                                .process_key_code(msg, &mut self.buf)?;
-                            self.session.as_mut().unwrap().refresh(&mut self.buf)?;
-                            self.buf.flush()?;
-                        }
+            match self.session.as_mut() {
+                Some(session) => {
+                    match event::read()? {
+                        Event::Key(key_event) => match key_event.code {
+                            KeyCode::Esc => {
+                                self.force_end_session()?;
+                                break;
+                            }
+                            key_code => session.process_key_code(key_code, &mut self.buf)?,
+                        },
+                        _ => (),
                     }
+                    session.refresh(&mut self.buf)?;
+                    self.buf.flush()?
                 }
-            } else {
-                // there must not be a session active
-                assert!(self.session.is_none());
+                None => {
+                    print!("> ");
+                    io::stdout().flush()?;
 
-                print!("> ");
-                io::stdout().flush()?;
+                    let mut line = String::new();
+                    io::stdin().read_line(&mut line)?;
+                    line = line.trim_end().to_string();
 
-                let mut line = String::new();
-                io::stdin().read_line(&mut line)?;
-                line = line.trim_end().to_string();
-
-                match command_parser::parse_string(line) {
-                    Some(Command::StartSession) => {
-                        self.start_new_session()?;
-                        continue;
+                    match command_parser::parse_string(line) {
+                        Some(Command::StartSession) => {
+                            self.start_new_session()?;
+                            continue;
+                        }
+                        None => println!("Invalid command."),
                     }
-                    None => println!("Invalid command."),
                 }
             }
         }
