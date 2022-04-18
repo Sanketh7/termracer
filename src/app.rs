@@ -29,7 +29,11 @@ impl App {
 
     pub fn start_new_session(&mut self) -> Result<(), Error> {
         self.session = Some(Session::new(
-            &vec!["a a a a a ".to_string(), "Ut eget ".to_string()],
+            &vec![
+                "little between not small those here go high use world with out they".to_string(),
+                "small get such so course right few one hold much when never late".to_string(),
+                "old each end help what well off will high come possible we ask who".to_string(),
+            ],
             WidgetProps {
                 row_offset: 0,
                 column_offset: 0,
@@ -98,7 +102,7 @@ impl App {
                     line = line.trim_end().to_string();
 
                     match command_parser::parse_string(line) {
-                        Some(Command::StartSession) => {
+                        Some(Command::Start) => {
                             self.start_new_session()?;
                             continue;
                         }

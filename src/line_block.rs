@@ -18,6 +18,7 @@ impl LineBlock {
         LineBlock {
             lines: Vec::new(),
             current_line_index: None,
+            // for get_num_correct_characters()
             line_lengths_prefix_sums: Vec::new(),
             widget_props,
             is_all_correct: false,
