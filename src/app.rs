@@ -111,7 +111,13 @@ impl App {
                         Some(Command::Quit) => {
                             break;
                         }
-                        None => println!("Invalid command."),
+                        Some(Command::Help) => {
+                            println!("{}", command_parser::HELP_STRING);
+                            continue;
+                        }
+                        None => {
+                            println!("Invalid command.\nUse \"help\" to see a list of commands.")
+                        }
                     }
                 }
             }
