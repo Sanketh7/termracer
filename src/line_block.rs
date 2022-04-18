@@ -10,6 +10,7 @@ pub struct LineBlock {
     current_line_index: Option<usize>,
     line_lengths_prefix_sums: Vec<usize>,
     widget_props: WidgetProps,
+    is_all_correct: bool,
 }
 
 impl LineBlock {
@@ -19,6 +20,7 @@ impl LineBlock {
             current_line_index: None,
             line_lengths_prefix_sums: Vec::new(),
             widget_props,
+            is_all_correct: false,
         }
     }
 
@@ -53,6 +55,10 @@ impl LineBlock {
         }
     }
 
+    pub fn is_all_correct(&self) -> bool {
+        self.is_all_correct
+    }
+
     fn process_enter<T: Write>(&mut self, buf: &mut T) -> Result<(), Error> {
         match self.current_line_index {
             Some(current_line_index) => {
@@ -63,6 +69,10 @@ impl LineBlock {
                             .get(self.current_line_index.unwrap())
                             .unwrap()
                             .move_to_user_column(buf)?;
+                    } else {
+                        // last line => check if everything is correct
+                        self.is_all_correct = self.get_num_correct_characters()
+                            == *self.line_lengths_prefix_sums.last().unwrap()
                     }
                 }
                 Ok(())
@@ -87,17 +97,19 @@ impl Widget for LineBlock {
     }
 
     fn process_key_code<T: Write>(&mut self, key_code: KeyCode, buf: &mut T) -> Result<(), Error> {
-        match self.current_line_index {
-            Some(current_line_index) => match key_code {
-                KeyCode::Enter => self.process_enter(buf),
-                _ => self
-                    .lines
-                    .get_mut(current_line_index)
-                    .unwrap()
-                    .process_key_code(key_code, buf),
-            },
-            None => Ok(()),
+        if !self.is_all_correct() {
+            if let Some(current_line_index) = self.current_line_index {
+                match key_code {
+                    KeyCode::Enter => self.process_enter(buf)?,
+                    _ => self
+                        .lines
+                        .get_mut(current_line_index)
+                        .unwrap()
+                        .process_key_code(key_code, buf)?,
+                }
+            }
         }
+        Ok(())
     }
 
     fn get_widget_props(&self) -> WidgetProps {

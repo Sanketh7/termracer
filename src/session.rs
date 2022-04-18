@@ -16,6 +16,7 @@ pub struct Session {
     line_block: LineBlock,
     stats_line: StatsLine,
     started_at: Option<Instant>,
+    wpm: Option<f32>,
     widget_props: WidgetProps,
 }
 
@@ -34,6 +35,7 @@ impl Session {
                 column_offset: widget_props.column_offset,
             }),
             started_at: None,
+            wpm: None,
             widget_props,
         }
     }
@@ -48,6 +50,8 @@ impl Session {
                 let wpm = (self.line_block.get_num_correct_characters() as f32
                     / CHARACTERS_PER_WORD as f32)
                     / (seconds / 60.0);
+                self.wpm = Some(wpm);
+
                 self.stats_line.set_wpm(wpm);
 
                 buf.queue(SavePosition)?; // save and restore position to keep cursor inside line block
@@ -58,6 +62,14 @@ impl Session {
             }
             None => Ok(()),
         }
+    }
+
+    pub fn is_done(&self) -> bool {
+        self.line_block.is_all_correct()
+    }
+
+    pub fn get_wpm(&self) -> Option<f32> {
+        self.wpm
     }
 
     fn get_elapsed_seconds(&self) -> Option<f32> {

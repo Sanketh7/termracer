@@ -29,10 +29,7 @@ impl App {
 
     pub fn start_new_session(&mut self) -> Result<(), Error> {
         self.session = Some(Session::new(
-            &vec![
-                "a a a a a a a a a a a a a a a a a a a a a a a a a a a ".to_string(),
-                "Ut eget suscipit lectus, id egestas neque. Mauris at metus ipsum.".to_string(),
-            ],
+            &vec!["a a a a a ".to_string(), "Ut eget ".to_string()],
             WidgetProps {
                 row_offset: 0,
                 column_offset: 0,
@@ -54,6 +51,18 @@ impl App {
         Ok(())
     }
 
+    // used when a session is ended normally (line block is done)
+    fn end_session(&mut self) -> Result<(), Error> {
+        let wpm = self.session.as_ref().unwrap().get_wpm().unwrap();
+
+        self.session = None;
+        self.buf.execute(LeaveAlternateScreen)?;
+        terminal::disable_raw_mode()?;
+
+        println!("Session finished! WPM: {}.", wpm as u16);
+        Ok(())
+    }
+
     pub fn event_loop(&mut self) -> Result<(), Error> {
         self.buf.queue(Clear(ClearType::All))?.queue(MoveTo(0, 0))?;
         self.buf.flush()?;
@@ -61,6 +70,12 @@ impl App {
         loop {
             match self.session.as_mut() {
                 Some(session) => {
+                    // exit if session is done
+                    if session.is_done() {
+                        self.end_session()?;
+                        continue;
+                    }
+
                     match event::read()? {
                         Event::Key(key_event) => match key_event.code {
                             KeyCode::Esc => {
