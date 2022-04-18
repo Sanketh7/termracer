@@ -1,9 +1,10 @@
 use crossterm::{
+    cursor::MoveTo,
     event,
     event::{Event, KeyCode},
     terminal,
-    terminal::{EnterAlternateScreen, LeaveAlternateScreen},
-    ExecutableCommand,
+    terminal::{Clear, ClearType, EnterAlternateScreen, LeaveAlternateScreen},
+    ExecutableCommand, QueueableCommand,
 };
 use std::io;
 use std::io::{Error, Stdout, Write};
@@ -54,6 +55,9 @@ impl App {
     }
 
     pub fn event_loop(&mut self) -> Result<(), Error> {
+        self.buf.queue(Clear(ClearType::All))?.queue(MoveTo(0, 0))?;
+        self.buf.flush()?;
+
         loop {
             match self.session.as_mut() {
                 Some(session) => {
