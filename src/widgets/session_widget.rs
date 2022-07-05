@@ -7,28 +7,28 @@ use std::cmp;
 use std::io::{Error, Write};
 use std::time::Instant;
 
-use super::constants::CHARACTERS_PER_WORD;
-use super::line_block::LineBlock;
-use super::stats_line::StatsLine;
-use super::widget::{Coord, EventHandleableWidget, ViewableWidget, ViewableWidgetProps};
-use super::word_generator::WordGenerator;
+use crate::constants::CHARACTERS_PER_WORD;
+use crate::widgets::line_block_widget::LineBlockWidget;
+use crate::widgets::stats_line_widget::StatsLineWidget;
+use crate::widgets::widget::{Coord, EventHandleableWidget, ViewableWidget, ViewableWidgetProps};
+use crate::word_generator::WordGenerator;
 
-pub struct Session {
-    line_block: LineBlock,
-    stats_line: StatsLine,
+pub struct SessionWidget {
+    line_block: LineBlockWidget,
+    stats_line: StatsLineWidget,
     started_at: Option<Instant>,
     wpm: Option<f32>,
     viewable_widget_props: ViewableWidgetProps,
 }
 
-impl Session {
+impl SessionWidget {
     pub fn new(viewable_widget_props: ViewableWidgetProps) -> Self {
         let word_generator = WordGenerator::new();
 
         let text_vec: Vec<String> = (0..5)
             .map(|_| word_generator.get_random_words(10).join(" "))
             .collect();
-        let mut line_block = LineBlock::new(ViewableWidgetProps {
+        let mut line_block = LineBlockWidget::new(ViewableWidgetProps {
             offset: viewable_widget_props.offset,
         });
         for text in text_vec.iter() {
@@ -36,9 +36,9 @@ impl Session {
         }
         let line_block_height = line_block.get_dimensions().row;
 
-        Session {
+        SessionWidget {
             line_block,
-            stats_line: StatsLine::new(ViewableWidgetProps {
+            stats_line: StatsLineWidget::new(ViewableWidgetProps {
                 offset: Coord {
                     row: viewable_widget_props.offset.row + line_block_height,
                     col: viewable_widget_props.offset.col,
@@ -87,7 +87,7 @@ impl Session {
     }
 }
 
-impl ViewableWidget for Session {
+impl ViewableWidget for SessionWidget {
     fn print<'a, T: Write>(&self, buf: &'a mut T) -> Result<&'a mut T, Error> {
         self.stats_line.print(buf)?;
         self.line_block.print(buf)
@@ -112,7 +112,7 @@ impl ViewableWidget for Session {
     }
 }
 
-impl EventHandleableWidget for Session {
+impl EventHandleableWidget for SessionWidget {
     fn process_key_code<'a, T: Write>(
         &mut self,
         key_code: KeyCode,

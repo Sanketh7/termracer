@@ -3,11 +3,7 @@ use std::io::Error;
 mod app;
 mod command_parser;
 mod constants;
-mod line;
-mod line_block;
-mod session;
-mod stats_line;
-mod widget;
+mod widgets;
 mod word_generator;
 
 use app::App;

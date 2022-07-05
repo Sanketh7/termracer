@@ -9,14 +9,14 @@ macro_rules! STATS_LINE_FORMAT_STRING {
     };
 }
 
-pub struct StatsLine {
+pub struct StatsLineWidget {
     viewable_widget_props: ViewableWidgetProps,
     wpm: f32,
 }
 
-impl StatsLine {
-    pub fn new(viewable_widget_props: ViewableWidgetProps) -> StatsLine {
-        StatsLine {
+impl StatsLineWidget {
+    pub fn new(viewable_widget_props: ViewableWidgetProps) -> StatsLineWidget {
+        StatsLineWidget {
             viewable_widget_props,
             wpm: 0.0,
         }
@@ -27,7 +27,7 @@ impl StatsLine {
     }
 }
 
-impl ViewableWidget for StatsLine {
+impl ViewableWidget for StatsLineWidget {
     fn print<'a, T: Write>(&self, buf: &'a mut T) -> Result<&'a mut T, Error> {
         buf.queue(MoveTo(
             self.get_offset().col as u16,
