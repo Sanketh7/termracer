@@ -1,3 +1,4 @@
+use ascii::{AsciiChar, AsciiString};
 use crossterm::{
     cursor::MoveTo,
     event::KeyCode,
@@ -24,7 +25,7 @@ impl<T: Write> LineWidgetBuf for T {
 }
 
 pub struct LineWidget {
-    text: String,
+    text: AsciiString,
     length: usize,
     is_correct: Vec<Option<bool>>, // None if no input yet
     user_column: usize,            // 0-indexed
@@ -32,8 +33,8 @@ pub struct LineWidget {
 }
 
 impl LineWidget {
-    pub fn new(text: String, viewable_widget_props: ViewableWidgetProps) -> Self {
-        let length = text.chars().count();
+    pub fn new(text: AsciiString, viewable_widget_props: ViewableWidgetProps) -> Self {
+        let length = text.len();
         LineWidget {
             text,
             length,
@@ -52,7 +53,7 @@ impl LineWidget {
 
     fn process_character<'a, T: Write>(
         &mut self,
-        c: char,
+        ch: AsciiChar,
         buf: &'a mut T,
     ) -> Result<&'a mut T, Error> {
         // don't let the line overflow
@@ -60,17 +61,17 @@ impl LineWidget {
             return Ok(buf);
         }
 
-        let correct_char = self.text.chars().nth(self.user_column).unwrap();
-        self.is_correct[self.user_column] = Some(c == correct_char);
+        let correct_char = self.text[self.user_column];
+        self.is_correct[self.user_column] = Some(ch == correct_char);
         let ret = buf
             .move_to_user_column(self)?
             .queue(style::PrintStyledContent(match correct_char {
-                ' ' => correct_char.on(if c == correct_char {
+                AsciiChar::Space => correct_char.as_char().on(if ch == correct_char {
                     Color::Green
                 } else {
                     Color::Red
                 }),
-                _ => correct_char.with(if c == correct_char {
+                _ => correct_char.as_char().with(if ch == correct_char {
                     Color::Green
                 } else {
                     Color::Red
@@ -90,9 +91,7 @@ impl LineWidget {
         if self.user_column < self.length {
             self.is_correct[self.user_column] = None;
             buf.move_to_user_column(self)?
-                .queue(style::Print(
-                    self.text.chars().nth(self.user_column).unwrap(),
-                ))?
+                .queue(style::Print(self.text[self.user_column]))?
                 .move_to_user_column(self)
         } else {
             Ok(buf)
@@ -109,16 +108,20 @@ impl ViewableWidget for LineWidget {
         buf.move_to_user_column(self)?;
 
         let mut index = 0;
-        for c in self.text.chars() {
+        for ch in self.text.chars() {
             match self.is_correct.get(index) {
                 Some(Some(b)) => {
-                    buf.queue(style::PrintStyledContent(match c {
-                        ' ' => c.on(if *b { Color::Green } else { Color::Red }),
-                        _ => c.with(if *b { Color::Green } else { Color::Red }),
+                    buf.queue(style::PrintStyledContent(match ch {
+                        AsciiChar::Space => {
+                            ch.as_char().on(if *b { Color::Green } else { Color::Red })
+                        }
+                        _ => ch
+                            .as_char()
+                            .with(if *b { Color::Green } else { Color::Red }),
                     }))?;
                 }
                 Some(None) => {
-                    buf.queue(style::Print(c))?;
+                    buf.queue(style::Print(ch))?;
                 }
                 _ => (),
             };
@@ -151,7 +154,9 @@ impl EventHandleableWidget for LineWidget {
         buf: &'a mut T,
     ) -> Result<&'a mut T, Error> {
         match key_code {
-            KeyCode::Char(c) => self.process_character(c, buf),
+            KeyCode::Char(c) if char::is_ascii(&c) => {
+                self.process_character(AsciiChar::new(c), buf)
+            }
             KeyCode::Backspace => self.process_backspace(buf),
             _ => Ok(buf),
         }

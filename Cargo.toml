@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 crossterm = "0.23"
 rand = "0.8.4"
+ascii = "1.0"

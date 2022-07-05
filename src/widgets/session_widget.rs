@@ -1,3 +1,4 @@
+use ascii::AsciiString;
 use crossterm::{
     cursor::{RestorePosition, SavePosition},
     event::KeyCode,
@@ -25,14 +26,24 @@ impl SessionWidget {
     pub fn new(viewable_widget_props: ViewableWidgetProps) -> Self {
         let word_generator = WordGenerator::new();
 
-        let text_vec: Vec<String> = (0..5)
-            .map(|_| word_generator.get_random_words(10).join(" "))
+        let text_vec: Vec<AsciiString> = (0..5)
+            .map(|_| {
+                AsciiString::from_ascii(
+                    word_generator
+                        .get_random_words(10)
+                        .iter()
+                        .map(|x| x.to_string())
+                        .collect::<Vec<String>>()
+                        .join(" "),
+                )
+                .unwrap()
+            })
             .collect();
         let mut line_block = LineBlockWidget::new(ViewableWidgetProps {
             offset: viewable_widget_props.offset,
         });
         for text in text_vec.iter() {
-            line_block.new_line(text.to_string());
+            line_block.new_line(text.to_ascii_string());
         }
         let line_block_height = line_block.get_dimensions().row;
 

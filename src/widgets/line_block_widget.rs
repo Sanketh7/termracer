@@ -1,3 +1,4 @@
+use ascii::AsciiString;
 use crossterm::event::KeyCode;
 use std::io::{Error, Write};
 use std::result::Result;
@@ -34,7 +35,7 @@ impl LineBlockWidget {
         }
     }
 
-    pub fn new_line(&mut self, text: String) {
+    pub fn new_line(&mut self, text: AsciiString) {
         let row = self.lines.len();
         let line = LineWidget::new(
             text,
