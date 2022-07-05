@@ -11,12 +11,12 @@ use std::io::{Error, Stdout, Write};
 
 use crate::command_parser;
 use crate::command_parser::Command;
-use crate::session::Session;
-use crate::widget::{Coord, EventHandleableWidget, ViewableWidget, ViewableWidgetProps};
+use crate::widgets::session_widget::SessionWidget;
+use crate::widgets::widget::{Coord, EventHandleableWidget, ViewableWidget, ViewableWidgetProps};
 
 pub struct App {
     buf: Stdout,
-    session: Option<Session>, // None when no session is active
+    session: Option<SessionWidget>, // None when no session is active
 }
 
 impl App {
@@ -28,7 +28,7 @@ impl App {
     }
 
     pub fn start_new_session(&mut self) -> Result<(), Error> {
-        self.session = Some(Session::new(ViewableWidgetProps {
+        self.session = Some(SessionWidget::new(ViewableWidgetProps {
             offset: Coord { row: 0, col: 0 },
         }));
 

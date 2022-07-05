@@ -2,20 +2,20 @@ use crossterm::event::KeyCode;
 use std::io::{Error, Write};
 use std::result::Result;
 
-use crate::line::{Line, LineBuf};
-use crate::widget::{Coord, EventHandleableWidget, ViewableWidget, ViewableWidgetProps};
+use crate::widgets::line_widget::{LineWidget, LineWidgetBuf};
+use crate::widgets::widget::{Coord, EventHandleableWidget, ViewableWidget, ViewableWidgetProps};
 
-pub struct LineBlock {
-    lines: Vec<Line>,
+pub struct LineBlockWidget {
+    lines: Vec<LineWidget>,
     current_line_index: Option<usize>,
     line_lengths_prefix_sums: Vec<usize>,
     is_all_correct: bool,
     viewable_widget_props: ViewableWidgetProps,
 }
 
-impl LineBlock {
+impl LineBlockWidget {
     pub fn new(viewable_widget_props: ViewableWidgetProps) -> Self {
-        LineBlock {
+        LineBlockWidget {
             lines: Vec::new(),
             current_line_index: None,
             line_lengths_prefix_sums: Vec::new(), // for get_num_correct_characters()
@@ -36,7 +36,7 @@ impl LineBlock {
 
     pub fn new_line(&mut self, text: String) {
         let row = self.lines.len();
-        let line = Line::new(
+        let line = LineWidget::new(
             text,
             ViewableWidgetProps {
                 offset: Coord {
@@ -89,7 +89,7 @@ impl LineBlock {
     }
 }
 
-impl ViewableWidget for LineBlock {
+impl ViewableWidget for LineBlockWidget {
     fn print<'a, T: Write>(&self, buf: &'a mut T) -> Result<&'a mut T, Error> {
         for line in self.lines.iter() {
             line.print(buf)?;
@@ -122,7 +122,7 @@ impl ViewableWidget for LineBlock {
     }
 }
 
-impl EventHandleableWidget for LineBlock {
+impl EventHandleableWidget for LineBlockWidget {
     fn process_key_code<'a, T: Write>(
         &mut self,
         key_code: KeyCode,

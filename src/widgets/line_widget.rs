@@ -8,14 +8,14 @@ use crossterm::{
 use std::io::{Error, Write};
 use std::result::Result;
 
-use crate::widget::{Coord, EventHandleableWidget, ViewableWidget, ViewableWidgetProps};
+use crate::widgets::widget::{Coord, EventHandleableWidget, ViewableWidget, ViewableWidgetProps};
 
-pub trait LineBuf {
-    fn move_to_user_column(&mut self, line: &Line) -> Result<&mut Self, Error>;
+pub trait LineWidgetBuf {
+    fn move_to_user_column(&mut self, line: &LineWidget) -> Result<&mut Self, Error>;
 }
 
-impl<T: Write> LineBuf for T {
-    fn move_to_user_column(&mut self, line: &Line) -> Result<&mut Self, Error> {
+impl<T: Write> LineWidgetBuf for T {
+    fn move_to_user_column(&mut self, line: &LineWidget) -> Result<&mut Self, Error> {
         self.queue(MoveTo(
             (line.user_column + line.get_offset().col) as u16,
             line.get_offset().row as u16,
@@ -23,7 +23,7 @@ impl<T: Write> LineBuf for T {
     }
 }
 
-pub struct Line {
+pub struct LineWidget {
     text: String,
     length: usize,
     is_correct: Vec<Option<bool>>, // None if no input yet
@@ -31,10 +31,10 @@ pub struct Line {
     viewable_widget_props: ViewableWidgetProps,
 }
 
-impl Line {
+impl LineWidget {
     pub fn new(text: String, viewable_widget_props: ViewableWidgetProps) -> Self {
         let length = text.chars().count();
-        Line {
+        LineWidget {
             text,
             length,
             is_correct: vec![None; length],
@@ -104,7 +104,7 @@ impl Line {
     }
 }
 
-impl ViewableWidget for Line {
+impl ViewableWidget for LineWidget {
     fn print<'a, T: Write>(&self, buf: &'a mut T) -> Result<&'a mut T, Error> {
         buf.move_to_user_column(self)?;
 
@@ -144,7 +144,7 @@ impl ViewableWidget for Line {
     }
 }
 
-impl EventHandleableWidget for Line {
+impl EventHandleableWidget for LineWidget {
     fn process_key_code<'a, T: Write>(
         &mut self,
         key_code: KeyCode,
