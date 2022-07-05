@@ -1,23 +1,23 @@
-use crossterm::{cursor::MoveTo, event::KeyCode, style, QueueableCommand};
+use crossterm::{cursor::MoveTo, style, QueueableCommand};
 use std::io::{Error, Write};
 
-use super::widget::{Widget, WidgetProps};
+use super::widget::{Coord, ViewableWidget, ViewableWidgetProps};
 
-macro_rules! FORMAT_STRING {
+macro_rules! STATS_LINE_FORMAT_STRING {
     () => {
         "WPM: {}"
     };
 }
 
 pub struct StatsLine {
-    widget_props: WidgetProps,
+    viewable_widget_props: ViewableWidgetProps,
     wpm: f32,
 }
 
 impl StatsLine {
-    pub fn new(widget_props: WidgetProps) -> StatsLine {
+    pub fn new(viewable_widget_props: ViewableWidgetProps) -> StatsLine {
         StatsLine {
-            widget_props,
+            viewable_widget_props,
             wpm: 0.0,
         }
     }
@@ -27,35 +27,38 @@ impl StatsLine {
     }
 }
 
-impl Widget for StatsLine {
-    fn print<T: Write>(&self, buf: &mut T) -> Result<(), Error> {
+impl ViewableWidget for StatsLine {
+    fn print<'a, T: Write>(&self, buf: &'a mut T) -> Result<&'a mut T, Error> {
         buf.queue(MoveTo(
-            self.widget_props.column_offset as u16,
-            self.widget_props.row_offset as u16,
+            self.get_offset().col as u16,
+            self.get_offset().row as u16,
         ))?
         // clear line to prevent artifacts from previous longer numbers
-        .queue(style::Print(" ".repeat(self.get_width())))?
+        .queue(style::Print(" ".repeat(self.get_dimensions().col)))?
         .queue(MoveTo(
-            self.widget_props.column_offset as u16,
-            self.widget_props.row_offset as u16,
+            self.get_offset().col as u16,
+            self.get_offset().row as u16,
         ))?
-        .queue(style::Print(format!(FORMAT_STRING!(), self.wpm as u16)))?;
-        Ok(())
+        .queue(style::Print(format!(
+            STATS_LINE_FORMAT_STRING!(),
+            self.wpm as u16
+        )))
     }
 
-    fn process_key_code<T: Write>(&mut self, _: KeyCode, _: &mut T) -> Result<(), Error> {
-        Ok(())
+    fn get_dimensions(&self) -> Coord {
+        Coord {
+            row: 1,
+            col: format!(STATS_LINE_FORMAT_STRING!(), self.wpm)
+                .chars()
+                .count(),
+        }
     }
 
-    fn get_widget_props(&self) -> WidgetProps {
-        self.widget_props
+    fn get_viewable_widget_props(&self) -> ViewableWidgetProps {
+        self.viewable_widget_props
     }
 
-    fn get_height(&self) -> usize {
-        1
-    }
-
-    fn get_width(&self) -> usize {
-        format!(FORMAT_STRING!(), self.wpm).chars().count()
+    fn get_offset(&self) -> Coord {
+        self.viewable_widget_props.offset
     }
 }
