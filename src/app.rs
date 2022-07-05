@@ -9,10 +9,10 @@ use crossterm::{
 use std::io;
 use std::io::{Error, Stdout, Write};
 
-use super::command_parser;
-use super::command_parser::Command;
-use super::session::Session;
-use super::widget::{Widget, WidgetProps};
+use crate::command_parser;
+use crate::command_parser::Command;
+use crate::session::Session;
+use crate::widget::{Coord, EventHandleableWidget, ViewableWidget, ViewableWidgetProps};
 
 pub struct App {
     buf: Stdout,
@@ -28,9 +28,8 @@ impl App {
     }
 
     pub fn start_new_session(&mut self) -> Result<(), Error> {
-        self.session = Some(Session::new(WidgetProps {
-            row_offset: 0,
-            column_offset: 0,
+        self.session = Some(Session::new(ViewableWidgetProps {
+            offset: Coord { row: 0, col: 0 },
         }));
 
         terminal::enable_raw_mode()?;
@@ -82,7 +81,9 @@ impl App {
                                 self.force_end_session()?;
                                 continue;
                             }
-                            key_code => session.process_key_code(key_code, &mut self.buf)?,
+                            key_code => {
+                                session.process_key_code(key_code, &mut self.buf)?;
+                            }
                         },
                         _ => (),
                     }

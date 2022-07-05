@@ -3,13 +3,14 @@ use crossterm::{
     event::KeyCode,
     QueueableCommand,
 };
+use std::cmp;
 use std::io::{Error, Write};
 use std::time::Instant;
 
 use super::constants::CHARACTERS_PER_WORD;
 use super::line_block::LineBlock;
 use super::stats_line::StatsLine;
-use super::widget::{Widget, WidgetProps};
+use super::widget::{Coord, EventHandleableWidget, ViewableWidget, ViewableWidgetProps};
 use super::word_generator::WordGenerator;
 
 pub struct Session {
@@ -17,31 +18,35 @@ pub struct Session {
     stats_line: StatsLine,
     started_at: Option<Instant>,
     wpm: Option<f32>,
-    widget_props: WidgetProps,
+    viewable_widget_props: ViewableWidgetProps,
 }
 
 impl Session {
-    pub fn new(widget_props: WidgetProps) -> Self {
+    pub fn new(viewable_widget_props: ViewableWidgetProps) -> Self {
         let word_generator = WordGenerator::new();
 
         let text_vec: Vec<String> = (0..5)
             .map(|_| word_generator.get_random_words(10).join(" "))
             .collect();
-        let mut line_block = LineBlock::new(widget_props);
+        let mut line_block = LineBlock::new(ViewableWidgetProps {
+            offset: viewable_widget_props.offset,
+        });
         for text in text_vec.iter() {
             line_block.new_line(text.to_string());
         }
-        let line_block_height = line_block.get_height();
+        let line_block_height = line_block.get_dimensions().row;
 
         Session {
             line_block,
-            stats_line: StatsLine::new(WidgetProps {
-                row_offset: widget_props.row_offset + line_block_height,
-                column_offset: widget_props.column_offset,
+            stats_line: StatsLine::new(ViewableWidgetProps {
+                offset: Coord {
+                    row: viewable_widget_props.offset.row + line_block_height,
+                    col: viewable_widget_props.offset.col,
+                },
             }),
             started_at: None,
             wpm: None,
-            widget_props,
+            viewable_widget_props,
         }
     }
 
@@ -49,7 +54,7 @@ impl Session {
         self.started_at = Some(Instant::now());
     }
 
-    pub fn refresh<T: Write>(&mut self, buf: &mut T) -> Result<(), Error> {
+    pub fn refresh<'a, T: Write>(&mut self, buf: &'a mut T) -> Result<&'a mut T, Error> {
         match self.get_elapsed_seconds() {
             Some(seconds) => {
                 let wpm = (self.line_block.get_num_correct_characters() as f32
@@ -59,13 +64,10 @@ impl Session {
 
                 self.stats_line.set_wpm(wpm);
 
-                buf.queue(SavePosition)?; // save and restore position to keep cursor inside line block
-                self.stats_line.print(buf)?;
-                // self.print(buf)?;
-                buf.queue(RestorePosition)?;
-                Ok(())
+                buf.queue(SavePosition)?;
+                self.stats_line.print(buf)?.queue(RestorePosition)
             }
-            None => Ok(()),
+            None => Ok(buf),
         }
     }
 
@@ -85,30 +87,40 @@ impl Session {
     }
 }
 
-impl Widget for Session {
-    fn print<T: Write>(&self, buf: &mut T) -> Result<(), Error> {
+impl ViewableWidget for Session {
+    fn print<'a, T: Write>(&self, buf: &'a mut T) -> Result<&'a mut T, Error> {
         self.stats_line.print(buf)?;
         self.line_block.print(buf)
     }
 
-    fn process_key_code<T: Write>(&mut self, key_code: KeyCode, buf: &mut T) -> Result<(), Error> {
-        match self.started_at {
-            Some(_) => self.line_block.process_key_code(key_code, buf),
-            None => Ok(()),
+    fn get_dimensions(&self) -> Coord {
+        Coord {
+            row: self.line_block.get_dimensions().row + self.stats_line.get_dimensions().row,
+            col: cmp::max(
+                self.line_block.get_dimensions().col,
+                self.stats_line.get_dimensions().col,
+            ),
         }
     }
 
-    fn get_widget_props(&self) -> WidgetProps {
-        self.widget_props
+    fn get_viewable_widget_props(&self) -> ViewableWidgetProps {
+        self.viewable_widget_props
     }
 
-    fn get_height(&self) -> usize {
-        let line_block_height = self.line_block.get_height();
-        line_block_height
+    fn get_offset(&self) -> Coord {
+        self.viewable_widget_props.offset
     }
+}
 
-    fn get_width(&self) -> usize {
-        let line_block_width = self.line_block.get_width();
-        line_block_width
+impl EventHandleableWidget for Session {
+    fn process_key_code<'a, T: Write>(
+        &mut self,
+        key_code: KeyCode,
+        buf: &'a mut T,
+    ) -> Result<&'a mut T, Error> {
+        match self.started_at {
+            Some(_) => self.line_block.process_key_code(key_code, buf),
+            None => Ok(buf),
+        }
     }
 }

@@ -8,32 +8,39 @@ use crossterm::{
 use std::io::{Error, Write};
 use std::result::Result;
 
-use super::widget::{Widget, WidgetProps};
+use crate::widget::{Coord, EventHandleableWidget, ViewableWidget, ViewableWidgetProps};
+
+pub trait LineBuf {
+    fn move_to_user_column(&mut self, line: &Line) -> Result<&mut Self, Error>;
+}
+
+impl<T: Write> LineBuf for T {
+    fn move_to_user_column(&mut self, line: &Line) -> Result<&mut Self, Error> {
+        self.queue(MoveTo(
+            (line.user_column + line.get_offset().col) as u16,
+            line.get_offset().row as u16,
+        ))
+    }
+}
 
 pub struct Line {
     text: String,
     length: usize,
     is_correct: Vec<Option<bool>>, // None if no input yet
-    row: usize,
-    user_column: usize,
-    widget_props: WidgetProps,
+    user_column: usize,            // 0-indexed
+    viewable_widget_props: ViewableWidgetProps,
 }
 
 impl Line {
-    pub fn new(text: String, row: usize, widget_props: WidgetProps) -> Self {
+    pub fn new(text: String, viewable_widget_props: ViewableWidgetProps) -> Self {
         let length = text.chars().count();
         Line {
             text,
             length,
             is_correct: vec![None; length],
-            row,            // 0-indexed
-            user_column: 0, // 0-indexed
-            widget_props,
+            user_column: 0,
+            viewable_widget_props,
         }
-    }
-
-    pub fn get_length(&self) -> usize {
-        self.length
     }
 
     pub fn get_num_correct(&self) -> usize {
@@ -43,62 +50,63 @@ impl Line {
             .sum()
     }
 
-    pub fn move_to_user_column<T: Write>(&self, buf: &mut T) -> Result<(), Error> {
-        buf.queue(MoveTo(
-            (self.user_column + self.widget_props.column_offset) as u16,
-            (self.row + self.widget_props.row_offset) as u16,
-        ))?;
-        Ok(())
-    }
-
-    fn process_character<T: Write>(&mut self, c: char, buf: &mut T) -> Result<(), Error> {
+    fn process_character<'a, T: Write>(
+        &mut self,
+        c: char,
+        buf: &'a mut T,
+    ) -> Result<&'a mut T, Error> {
         // don't let the line overflow
-        if self.user_column as usize >= self.text.len() {
-            return Ok(());
+        if self.user_column as usize >= self.length {
+            return Ok(buf);
         }
 
-        self.move_to_user_column(buf)?;
-
         let correct_char = self.text.chars().nth(self.user_column).unwrap();
-        let is_correct = c == correct_char;
-        buf.queue(style::PrintStyledContent(match correct_char {
-            ' ' => correct_char.on(if is_correct { Color::Green } else { Color::Red }),
-            _ => correct_char.with(if is_correct { Color::Green } else { Color::Red }),
-        }))?;
-        self.is_correct[self.user_column] = Some(is_correct);
+        self.is_correct[self.user_column] = Some(c == correct_char);
+        let ret = buf
+            .move_to_user_column(self)?
+            .queue(style::PrintStyledContent(match correct_char {
+                ' ' => correct_char.on(if c == correct_char {
+                    Color::Green
+                } else {
+                    Color::Red
+                }),
+                _ => correct_char.with(if c == correct_char {
+                    Color::Green
+                } else {
+                    Color::Red
+                }),
+            }));
         self.user_column += 1;
-
-        Ok(())
+        ret
     }
 
-    fn process_backspace<T: Write>(&mut self, buf: &mut T) -> Result<(), Error> {
+    fn process_backspace<'a, T: Write>(&mut self, buf: &'a mut T) -> Result<&'a mut T, Error> {
         // only move backward if not already at the front
         if self.user_column > 0 {
             self.user_column -= 1;
         }
-        self.move_to_user_column(buf)?;
 
         // only replace character if in-bounds
-        if self.user_column < self.text.len() {
-            self.move_to_user_column(buf)?;
-            buf.queue(style::Print(
-                self.text.chars().nth(self.user_column).unwrap(),
-            ))?;
+        if self.user_column < self.length {
             self.is_correct[self.user_column] = None;
-            self.move_to_user_column(buf)?;
+            buf.move_to_user_column(self)?
+                .queue(style::Print(
+                    self.text.chars().nth(self.user_column).unwrap(),
+                ))?
+                .move_to_user_column(self)
+        } else {
+            Ok(buf)
         }
-
-        Ok(())
     }
 
     pub fn is_all_correct(&self) -> bool {
-        (self.user_column == self.text.len()) && self.is_correct.iter().all(|&x| x == Some(true))
+        (self.user_column == self.length) && self.is_correct.iter().all(|&x| x == Some(true))
     }
 }
 
-impl Widget for Line {
-    fn print<T: Write>(&self, buf: &mut T) -> Result<(), Error> {
-        self.move_to_user_column(buf)?;
+impl ViewableWidget for Line {
+    fn print<'a, T: Write>(&self, buf: &'a mut T) -> Result<&'a mut T, Error> {
+        buf.move_to_user_column(self)?;
 
         let mut index = 0;
         for c in self.text.chars() {
@@ -117,25 +125,35 @@ impl Widget for Line {
             index += 1;
         }
 
-        Ok(())
+        Ok(buf)
     }
 
-    fn process_key_code<T: Write>(&mut self, key_code: KeyCode, buf: &mut T) -> Result<(), Error> {
-        match key_code {
-            KeyCode::Char(c) => self.process_character(c, buf),
-            KeyCode::Backspace => self.process_backspace(buf),
-            _ => Ok(()),
+    fn get_dimensions(&self) -> Coord {
+        Coord {
+            row: 1,
+            col: self.length,
         }
     }
 
-    fn get_widget_props(&self) -> WidgetProps {
-        self.widget_props
+    fn get_viewable_widget_props(&self) -> ViewableWidgetProps {
+        self.viewable_widget_props
     }
 
-    fn get_height(&self) -> usize {
-        1
+    fn get_offset(&self) -> Coord {
+        self.viewable_widget_props.offset
     }
-    fn get_width(&self) -> usize {
-        self.get_length()
+}
+
+impl EventHandleableWidget for Line {
+    fn process_key_code<'a, T: Write>(
+        &mut self,
+        key_code: KeyCode,
+        buf: &'a mut T,
+    ) -> Result<&'a mut T, Error> {
+        match key_code {
+            KeyCode::Char(c) => self.process_character(c, buf),
+            KeyCode::Backspace => self.process_backspace(buf),
+            _ => Ok(buf),
+        }
     }
 }

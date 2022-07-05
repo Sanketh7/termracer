@@ -2,15 +2,29 @@ use crossterm::event::KeyCode;
 use std::io::{Error, Write};
 
 #[derive(Clone, Copy)]
-pub struct WidgetProps {
-    pub row_offset: usize,
-    pub column_offset: usize,
+pub struct Coord {
+    pub row: usize,
+    pub col: usize,
 }
 
-pub trait Widget {
-    fn print<T: Write>(&self, buf: &mut T) -> Result<(), Error>;
-    fn process_key_code<T: Write>(&mut self, key_code: KeyCode, buf: &mut T) -> Result<(), Error>;
-    fn get_widget_props(&self) -> WidgetProps;
-    fn get_height(&self) -> usize;
-    fn get_width(&self) -> usize;
+#[derive(Clone, Copy)]
+pub struct ViewableWidgetProps {
+    pub offset: Coord,
+}
+
+pub trait ViewableWidget {
+    fn print<'a, T: Write>(&self, buf: &'a mut T) -> Result<&'a mut T, Error>;
+
+    fn get_dimensions(&self) -> Coord;
+
+    fn get_viewable_widget_props(&self) -> ViewableWidgetProps;
+    fn get_offset(&self) -> Coord;
+}
+
+pub trait EventHandleableWidget {
+    fn process_key_code<'a, T: Write>(
+        &mut self,
+        key_code: KeyCode,
+        buf: &'a mut T,
+    ) -> Result<&'a mut T, Error>;
 }
