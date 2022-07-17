@@ -2,7 +2,7 @@ use ascii::AsciiString;
 use crossterm::{
     cursor::{RestorePosition, SavePosition},
     event::KeyCode,
-    QueueableCommand,
+    terminal, QueueableCommand,
 };
 use std::cmp;
 use std::io::{Error, Write};
@@ -22,23 +22,39 @@ pub struct SessionWidget {
     viewable_widget_props: ViewableWidgetProps,
 }
 
-impl SessionWidget {
-    pub fn new(viewable_widget_props: ViewableWidgetProps) -> Self {
-        let word_generator = WordGenerator::new();
+fn generate_text_vec(num_words: usize, max_line_length: usize) -> Vec<AsciiString> {
+    let words = WordGenerator::new().get_random_words(num_words);
+    let mut lines: Vec<Vec<AsciiString>> = vec![vec![]];
+    let mut curr_line_length = 0;
+    for word in words {
+        // +1 to account for space
+        if curr_line_length + 1 + word.len() <= max_line_length {
+            curr_line_length += 1 + word.len();
+            lines.last_mut().unwrap().push(word);
+        } else {
+            curr_line_length = word.len();
+            lines.push(vec![word]);
+        }
+    }
+    // combine each line into a space-separated string
+    lines
+        .iter()
+        .map(|line| {
+            AsciiString::from_ascii(
+                line.iter()
+                    .map(|x| x.to_string())
+                    .collect::<Vec<String>>()
+                    .join(" "),
+            )
+            .unwrap()
+        })
+        .collect::<Vec<AsciiString>>()
+}
 
-        let text_vec: Vec<AsciiString> = (0..5)
-            .map(|_| {
-                AsciiString::from_ascii(
-                    word_generator
-                        .get_random_words(10)
-                        .iter()
-                        .map(|x| x.to_string())
-                        .collect::<Vec<String>>()
-                        .join(" "),
-                )
-                .unwrap()
-            })
-            .collect();
+impl SessionWidget {
+    pub fn new(viewable_widget_props: ViewableWidgetProps, num_words: usize) -> Self {
+        // TODO: make getting the width more robust (e.g. widgets have a max size)
+        let text_vec = generate_text_vec(num_words, terminal::size().unwrap().0 as usize);
         let mut line_block = LineBlockWidget::new(ViewableWidgetProps {
             offset: viewable_widget_props.offset,
         });

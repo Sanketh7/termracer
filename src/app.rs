@@ -27,10 +27,13 @@ impl App {
         }
     }
 
-    pub fn start_new_session(&mut self) -> Result<(), Error> {
-        self.session = Some(SessionWidget::new(ViewableWidgetProps {
-            offset: Coord { row: 0, col: 0 },
-        }));
+    pub fn start_new_session(&mut self, num_words: usize) -> Result<(), Error> {
+        self.session = Some(SessionWidget::new(
+            ViewableWidgetProps {
+                offset: Coord { row: 0, col: 0 },
+            },
+            num_words,
+        ));
 
         terminal::enable_raw_mode()?;
         self.buf.execute(EnterAlternateScreen)?;
@@ -99,8 +102,8 @@ impl App {
                     line = line.trim_end().to_string();
 
                     match command_parser::parse_string(line) {
-                        Some(Command::Start) => {
-                            self.start_new_session()?;
+                        Some(Command::Start(num_words)) => {
+                            self.start_new_session(num_words)?;
                             continue;
                         }
                         Some(Command::Quit) => {
