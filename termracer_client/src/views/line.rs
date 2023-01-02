@@ -50,6 +50,10 @@ impl Line {
         .expect("ERROR: Failed to reset cursor position.");
     }
 
+    pub fn is_correct(&self) -> bool {
+        self.state.correct.iter().all(|&x| x == Some(true))
+    }
+
     fn process_character(&mut self, c: char) {
         if self.state.index < self.text.len() {
             self.state.correct[self.state.index] = Some(c == self.text[self.state.index]);
@@ -197,5 +201,38 @@ mod tests {
             vec![Some(true), Some(false), None, None]
         );
         assert_eq!(line.state.index, line.text.len() - 2);
+    }
+
+    #[test]
+    fn it_checks_correctness() {
+        let text = "text";
+        let mut line = Line::new(
+            text.chars().collect(),
+            Rect {
+                row: 0,
+                column: 0,
+                width: 50,
+                height: 1,
+            },
+        );
+
+        line.process_character('t');
+        line.process_character('e');
+        line.process_character('a');
+        line.process_character('t');
+        line.process_character('t');
+
+        assert!(!line.is_correct());
+
+        line.process_backspace();
+        line.process_backspace();
+        line.process_character('x');
+        line.process_character('t');
+
+        assert!(line.is_correct());
+
+        line.process_character('z');
+
+        assert!(line.is_correct());
     }
 }
