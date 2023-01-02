@@ -6,7 +6,7 @@ use std::io::{self, Write};
 use std::time::Duration;
 use views::{
     line_block::LineBlock,
-    view::{KeyEventHandleable, Rect, View},
+    view::{KeyEventHandleable, Rect, View}, stats_line::StatsLine,
 };
 
 mod views;
@@ -31,6 +31,13 @@ fn main() {
             height: 2,
         },
     );
+    let mut stats = StatsLine::new(Rect {
+        row: 2,
+        column: 0,
+        width: 50,
+        height: 1
+    });
+    let mut wpm = 0.0;
 
     loop {
         if event::poll(Duration::from_millis(30)).expect("ERROR: Failed to poll event.") {
@@ -42,9 +49,12 @@ fn main() {
                 _ => (),
             }
         } else {
+            stats.set_wpm(wpm);
             block.display(&mut buf);
+            stats.display(&mut buf);
             block.reset_cursor(&mut buf);
-            buf.flush().expect("ERROR: Failed to flush buffer.")
+            buf.flush().expect("ERROR: Failed to flush buffer.");
+            wpm += 0.1;
         }
     }
 

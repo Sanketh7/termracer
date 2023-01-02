@@ -10,7 +10,7 @@ pub struct Rect {
 }
 
 pub trait View {
-    fn display<T: Write>(&self, buf: &mut T);
+    fn display<T: Write>(&mut self, buf: &mut T);
     fn get_bounds(&self) -> Rect;
 }
 

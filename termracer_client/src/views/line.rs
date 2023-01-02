@@ -73,12 +73,13 @@ impl Line {
 }
 
 impl View for Line {
-    fn display<T: Write>(&self, buf: &mut T) {
+    fn display<T: Write>(&mut self, buf: &mut T) {
         let mut i = 0;
         while i < self.text.len() {
             if self.state.dirty[i] {
                 let mut j = i;
                 while j < self.text.len() && self.state.dirty[j] {
+                    self.state.dirty[i] = false;
                     j += 1;
                 }
 

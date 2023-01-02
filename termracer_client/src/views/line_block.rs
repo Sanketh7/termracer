@@ -68,8 +68,8 @@ impl LineBlock {
 }
 
 impl View for LineBlock {
-    fn display<T: Write>(&self, buf: &mut T) {
-        for line in &self.lines {
+    fn display<T: Write>(&mut self, buf: &mut T) {
+        for line in &mut self.lines {
             line.display(buf);
         }
     }
