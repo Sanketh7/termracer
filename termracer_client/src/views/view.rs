@@ -1,5 +1,5 @@
-use std::io::Write;
 use crossterm::event::KeyEvent;
+use std::io::Write;
 
 #[derive(Clone, Copy)]
 pub struct Rect {
