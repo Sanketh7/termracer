@@ -28,6 +28,7 @@ impl Cell {
 type Buffer = Vec<Vec<Cell>>;
 
 pub struct Window {
+    // bounds in world space
     bounds: Rect,
     buffer: Buffer,
     dirty: Vec<Vec<bool>>,
@@ -44,6 +45,7 @@ impl Window {
         }
     }
 
+    // row, column, bounds are in window space
     pub fn draw(&mut self, s: &str, fg: Color, bg: Color, row: u16, column: u16, bounds: Rect) {
         let chars: Vec<&str> = s.graphemes(true).collect();
         assert!(
@@ -53,8 +55,8 @@ impl Window {
 
         for (dcol, c) in chars.into_iter().enumerate() {
             if self.check_coord(row, column + (dcol as u16), bounds) {
-                let buffer_row = row - self.bounds.row;
-                let buffer_column = column + (dcol as u16) - self.bounds.column;
+                let buffer_row = row;
+                let buffer_column = column + (dcol as u16);
                 self.buffer[buffer_row as usize][buffer_column as usize] = Cell {
                     c: c.to_string(),
                     fg,
@@ -65,14 +67,8 @@ impl Window {
     }
 
     fn check_coord(&self, row: u16, column: u16, bounds: Rect) -> bool {
-        let inside_window = row >= self.bounds.row
-            && row < (self.bounds.row + self.bounds.height)
-            && column >= self.bounds.column
-            && column < (self.bounds.column + self.bounds.width);
-        let inside_bounds = row >= bounds.row
-            && row < (bounds.row + bounds.height)
-            && column >= bounds.column
-            && column < (bounds.column + bounds.width);
+        let inside_window = row < self.bounds.height && column < self.bounds.width;
+        let inside_bounds = row >= bounds.row && row < bounds.height && column >= bounds.column && column < bounds.width;
         inside_window && inside_bounds
     }
 
