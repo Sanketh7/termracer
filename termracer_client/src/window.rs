@@ -68,7 +68,10 @@ impl Window {
 
     fn check_coord(&self, row: u16, column: u16, bounds: Rect) -> bool {
         let inside_window = row < self.bounds.height && column < self.bounds.width;
-        let inside_bounds = row >= bounds.row && row < bounds.height && column >= bounds.column && column < bounds.width;
+        let inside_bounds = row >= bounds.row
+            && row < bounds.height
+            && column >= bounds.column
+            && column < bounds.width;
         inside_window && inside_bounds
     }
 
@@ -98,15 +101,44 @@ impl Window {
 
 #[cfg(test)]
 mod tests {
-    use crossterm::style::Color;
-    use crate::rect::Rect;
     use super::Window;
+    use crate::rect::Rect;
+    use crossterm::style::Color;
 
     #[test]
     fn it_draws() {
-        let mut window = Window::new(Rect { row: 0, column: 0, width: 3, height: 2});
-        window.draw("abcd", Color::Reset, Color::Reset, 0, 0, Rect {row: 0, column: 0, width: 3, height: 2});
-        window.draw("ef", Color::Reset, Color::Reset, 1, 1, Rect {row: 0, column: 0, width: 3, height: 2});
+        let mut window = Window::new(Rect {
+            row: 0,
+            column: 0,
+            width: 3,
+            height: 2,
+        });
+        window.draw(
+            "abcd",
+            Color::Reset,
+            Color::Reset,
+            0,
+            0,
+            Rect {
+                row: 0,
+                column: 0,
+                width: 3,
+                height: 2,
+            },
+        );
+        window.draw(
+            "ef",
+            Color::Reset,
+            Color::Reset,
+            1,
+            1,
+            Rect {
+                row: 0,
+                column: 0,
+                width: 3,
+                height: 2,
+            },
+        );
 
         assert_eq!(window.buffer[0][0].c, "a");
         assert_eq!(window.buffer[0][1].c, "b");
@@ -119,9 +151,38 @@ mod tests {
 
     #[test]
     fn it_draws_overlap() {
-        let mut window = Window::new(Rect { row: 0, column: 0, width: 3, height: 2});
-        window.draw("abcd", Color::Reset, Color::Reset, 0, 0, Rect {row: 0, column: 0, width: 3, height: 2});
-        window.draw("ef", Color::Reset, Color::Reset, 0, 1, Rect {row: 0, column: 0, width: 3, height: 2});
+        let mut window = Window::new(Rect {
+            row: 0,
+            column: 0,
+            width: 3,
+            height: 2,
+        });
+        window.draw(
+            "abcd",
+            Color::Reset,
+            Color::Reset,
+            0,
+            0,
+            Rect {
+                row: 0,
+                column: 0,
+                width: 3,
+                height: 2,
+            },
+        );
+        window.draw(
+            "ef",
+            Color::Reset,
+            Color::Reset,
+            0,
+            1,
+            Rect {
+                row: 0,
+                column: 0,
+                width: 3,
+                height: 2,
+            },
+        );
 
         assert_eq!(window.buffer[0][0].c, "a");
         assert_eq!(window.buffer[0][1].c, "e");
@@ -134,12 +195,53 @@ mod tests {
 
     #[test]
     fn it_draws_within_bounds() {
-        let mut window = Window::new(Rect { row: 0, column: 0, width: 3, height: 2});
+        let mut window = Window::new(Rect {
+            row: 0,
+            column: 0,
+            width: 3,
+            height: 2,
+        });
         // outside bounds rect
-        window.draw("abcd", Color::Reset, Color::Reset, 0, 0, Rect {row: 0, column: 1, width: 3, height: 2});
+        window.draw(
+            "abcd",
+            Color::Reset,
+            Color::Reset,
+            0,
+            0,
+            Rect {
+                row: 0,
+                column: 1,
+                width: 3,
+                height: 2,
+            },
+        );
         // outside window
-        window.draw("ef", Color::Reset, Color::Reset, 1, 2, Rect {row: 0, column: 0, width: 5, height: 2});
-        window.draw("gh", Color::Reset, Color::Reset, 2, 0, Rect {row: 0, column: 0, width: 3, height: 5});
+        window.draw(
+            "ef",
+            Color::Reset,
+            Color::Reset,
+            1,
+            2,
+            Rect {
+                row: 0,
+                column: 0,
+                width: 5,
+                height: 2,
+            },
+        );
+        window.draw(
+            "gh",
+            Color::Reset,
+            Color::Reset,
+            2,
+            0,
+            Rect {
+                row: 0,
+                column: 0,
+                width: 3,
+                height: 5,
+            },
+        );
 
         assert_eq!(window.buffer[0][0].c, " ");
         assert_eq!(window.buffer[0][1].c, "b");

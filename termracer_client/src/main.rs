@@ -2,18 +2,19 @@ use crossterm::{
     event::{self, Event, KeyCode},
     execute, terminal,
 };
-use unicode_segmentation::UnicodeSegmentation;
+use rect::Rect;
 use std::io::{self, Write};
 use std::time::Duration;
+use unicode_segmentation::UnicodeSegmentation;
 use views::{
     line_block::LineBlock,
-    view::{KeyEventHandleable, View}, stats_line::StatsLine,
+    stats_line::StatsLine,
+    view::{KeyEventHandleable, View},
 };
-use rect::Rect;
 
+mod rect;
 mod views;
 mod window;
-mod rect;
 
 fn main() {
     let mut buf = io::stdout();
@@ -39,7 +40,7 @@ fn main() {
         row: 2,
         column: 0,
         width: 50,
-        height: 1
+        height: 1,
     });
     let mut wpm = 0.0;
 

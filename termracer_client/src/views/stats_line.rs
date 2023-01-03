@@ -1,6 +1,6 @@
-use crossterm::{queue, cursor, style};
-use super::view::{View};
+use super::view::View;
 use crate::rect::Rect;
+use crossterm::{cursor, queue, style};
 use std::io::Write;
 
 macro_rules! STATS_LINE_FORMAT_STRING {
@@ -41,12 +41,14 @@ impl View for StatsLine {
     fn display<T: Write>(&mut self, buf: &mut T) {
         if self.state.dirty {
             self.state.dirty = false;
-            queue!(buf, 
-                   cursor::MoveTo(self.bounds.column, self.bounds.row),
-                   style::Print(" ".repeat(self.bounds.width as usize)),
-                   cursor::MoveTo(self.bounds.column, self.bounds.row),
-                   style::Print(format!(STATS_LINE_FORMAT_STRING!(), self.state.wpm as u32))
-            ).expect("ERROR: Failed to draw stats line.");
+            queue!(
+                buf,
+                cursor::MoveTo(self.bounds.column, self.bounds.row),
+                style::Print(" ".repeat(self.bounds.width as usize)),
+                cursor::MoveTo(self.bounds.column, self.bounds.row),
+                style::Print(format!(STATS_LINE_FORMAT_STRING!(), self.state.wpm as u32))
+            )
+            .expect("ERROR: Failed to draw stats line.");
         }
     }
 

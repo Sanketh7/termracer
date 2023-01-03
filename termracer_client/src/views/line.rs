@@ -57,7 +57,8 @@ impl Line {
 
     fn process_character(&mut self, c: char) {
         if self.state.index < self.text.len() {
-            self.state.correct[self.state.index] = Some(c.to_string() == self.text[self.state.index]);
+            self.state.correct[self.state.index] =
+                Some(c.to_string() == self.text[self.state.index]);
             self.state.dirty[self.state.index] = true;
             self.state.index += 1;
         }
