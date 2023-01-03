@@ -1,5 +1,6 @@
 use crossterm::{queue, cursor, style};
-use super::view::{Rect, View};
+use super::view::{View};
+use crate::rect::Rect;
 use std::io::Write;
 
 macro_rules! STATS_LINE_FORMAT_STRING {

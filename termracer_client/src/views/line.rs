@@ -1,4 +1,5 @@
-use super::view::{KeyEventHandleable, Rect, View};
+use super::view::{KeyEventHandleable, View};
+use crate::rect::Rect;
 use crossterm::{
     cursor,
     event::{KeyCode, KeyEvent},
@@ -15,13 +16,13 @@ struct State {
 }
 
 pub struct Line {
-    text: Vec<char>,
+    text: Vec<String>,
     bounds: Rect,
     state: State,
 }
 
 impl Line {
-    pub fn new(text: Vec<char>, bounds: Rect) -> Self {
+    pub fn new(text: Vec<String>, bounds: Rect) -> Self {
         let length = text.len();
         assert!(
             length <= bounds.width as usize,
@@ -56,7 +57,7 @@ impl Line {
 
     fn process_character(&mut self, c: char) {
         if self.state.index < self.text.len() {
-            self.state.correct[self.state.index] = Some(c == self.text[self.state.index]);
+            self.state.correct[self.state.index] = Some(c.to_string() == self.text[self.state.index]);
             self.state.dirty[self.state.index] = true;
             self.state.index += 1;
         }
@@ -92,20 +93,20 @@ impl View for Line {
                 for (c, correct) in self.text[i..j].iter().zip(&self.state.correct[i..j]) {
                     let styled = match correct {
                         Some(true) => {
-                            if c.is_whitespace() {
-                                c.on(Color::Green)
+                            if c.contains(char::is_whitespace) {
+                                c.clone().on(Color::Green)
                             } else {
-                                c.with(Color::Green)
+                                c.clone().with(Color::Green)
                             }
                         }
                         Some(false) => {
-                            if c.is_whitespace() {
-                                c.on(Color::Red)
+                            if c.contains(char::is_whitespace) {
+                                c.clone().on(Color::Red)
                             } else {
-                                c.with(Color::Red)
+                                c.clone().with(Color::Red)
                             }
                         }
-                        None => c.reset(),
+                        None => c.clone().reset(),
                     };
                     queue!(buf, style::PrintStyledContent(styled))
                         .expect("ERROR: Failed to print styled character.");
@@ -136,13 +137,15 @@ impl KeyEventHandleable for Line {
 #[cfg(test)]
 mod tests {
     use super::Line;
-    use crate::views::view::Rect;
+    use crate::rect::Rect;
+    use unicode_segmentation::UnicodeSegmentation;
 
     #[test]
     fn it_processes_characters() {
         let text = "text";
+        let chars = text.graphemes(true).map(String::from).collect();
         let mut line = Line::new(
-            text.chars().collect(),
+            chars,
             Rect {
                 row: 0,
                 column: 0,
@@ -174,8 +177,9 @@ mod tests {
     #[test]
     fn it_processes_backspaces() {
         let text = "text";
+        let chars = text.graphemes(true).map(String::from).collect();
         let mut line = Line::new(
-            text.chars().collect(),
+            chars,
             Rect {
                 row: 0,
                 column: 0,
@@ -207,8 +211,9 @@ mod tests {
     #[test]
     fn it_checks_correctness() {
         let text = "text";
+        let chars = text.graphemes(true).map(String::from).collect();
         let mut line = Line::new(
-            text.chars().collect(),
+            chars,
             Rect {
                 row: 0,
                 column: 0,

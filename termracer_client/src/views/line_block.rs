@@ -1,7 +1,8 @@
 use super::{
     line::Line,
-    view::{KeyEventHandleable, Rect, View},
+    view::{KeyEventHandleable, View},
 };
+use crate::rect::Rect;
 use crossterm::event::{KeyCode, KeyEvent};
 use std::io::Write;
 
@@ -18,7 +19,7 @@ pub struct LineBlock {
 }
 
 impl LineBlock {
-    pub fn new(text_lines: Vec<Vec<char>>, bounds: Rect) -> Self {
+    pub fn new(text_lines: Vec<Vec<String>>, bounds: Rect) -> Self {
         let length = text_lines.len();
         assert!(
             length <= bounds.height as usize,
@@ -97,6 +98,7 @@ mod tests {
     use super::{LineBlock, Rect};
     use crate::views::view::KeyEventHandleable;
     use crossterm::event::{KeyCode, KeyEvent, KeyEventKind, KeyEventState, KeyModifiers};
+    use unicode_segmentation::UnicodeSegmentation;
 
     fn create_char_key_event(code: KeyCode) -> KeyEvent {
         KeyEvent {
@@ -112,7 +114,7 @@ mod tests {
         let text = "ab\ncd".to_owned();
         let text_lines = text
             .split('\n')
-            .map(|line| line.chars().collect())
+            .map(|line| line.graphemes(true).map(String::from).collect())
             .collect();
         let mut block = LineBlock::new(
             text_lines,

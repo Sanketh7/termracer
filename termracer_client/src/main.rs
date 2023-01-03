@@ -2,14 +2,18 @@ use crossterm::{
     event::{self, Event, KeyCode},
     execute, terminal,
 };
+use unicode_segmentation::UnicodeSegmentation;
 use std::io::{self, Write};
 use std::time::Duration;
 use views::{
     line_block::LineBlock,
-    view::{KeyEventHandleable, Rect, View}, stats_line::StatsLine,
+    view::{KeyEventHandleable, View}, stats_line::StatsLine,
 };
+use rect::Rect;
 
 mod views;
+mod window;
+mod rect;
 
 fn main() {
     let mut buf = io::stdout();
@@ -20,7 +24,7 @@ fn main() {
     let text = "Sample text\nNext line!".to_owned();
     let text_lines = text
         .split('\n')
-        .map(|line| line.chars().collect())
+        .map(|line| line.graphemes(true).map(String::from).collect())
         .collect();
     let mut block = LineBlock::new(
         text_lines,
