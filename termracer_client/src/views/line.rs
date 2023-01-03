@@ -1,10 +1,10 @@
 use super::view::{KeyEventHandleable, View};
-use crate::rect::Rect;
+use crate::{rect::Rect, window::Window};
 use crossterm::{
     cursor,
     event::{KeyCode, KeyEvent},
     queue,
-    style::{self, Color, Stylize},
+    style::Color,
 };
 use std::io::Write;
 
@@ -46,7 +46,8 @@ impl Line {
             cursor::MoveTo(
                 self.bounds.column + (self.state.index as u16),
                 self.bounds.row
-            )
+            ),
+            cursor::Show,
         )
         .expect("ERROR: Failed to reset cursor position.");
     }
@@ -75,47 +76,39 @@ impl Line {
 }
 
 impl View for Line {
-    fn display<T: Write>(&mut self, buf: &mut T) {
-        let mut i = 0;
-        while i < self.text.len() {
+    fn draw(&mut self, window: &mut Window) {
+        for (i, c) in self.text.iter().enumerate() {
             if self.state.dirty[i] {
-                let mut j = i;
-                while j < self.text.len() && self.state.dirty[j] {
-                    self.state.dirty[i] = false;
-                    j += 1;
-                }
+                self.state.dirty[i] = false;
 
-                // print chars from [i, j)
-                queue!(
-                    buf,
-                    cursor::MoveTo(self.bounds.column + (i as u16), self.bounds.row)
+                let fg = if c.contains(char::is_whitespace) {
+                    Color::White
+                } else {
+                    match self.state.correct[i] {
+                        Some(true) => Color::Green,
+                        Some(false) => Color::Red,
+                        None => Color::White,
+                    }
+                };
+
+                let bg = if c.contains(char::is_whitespace) {
+                    match self.state.correct[i] {
+                        Some(true) => Color::Green,
+                        Some(false) => Color::Red,
+                        None => Color::Reset,
+                    }
+                } else {
+                    Color::Reset
+                };
+
+                window.draw(
+                    c,
+                    fg,
+                    bg,
+                    self.bounds.row,
+                    self.bounds.column + (i as u16),
+                    self.bounds,
                 )
-                .expect("ERROR: Failed to move cursor position.");
-                for (c, correct) in self.text[i..j].iter().zip(&self.state.correct[i..j]) {
-                    let styled = match correct {
-                        Some(true) => {
-                            if c.contains(char::is_whitespace) {
-                                c.clone().on(Color::Green)
-                            } else {
-                                c.clone().with(Color::Green)
-                            }
-                        }
-                        Some(false) => {
-                            if c.contains(char::is_whitespace) {
-                                c.clone().on(Color::Red)
-                            } else {
-                                c.clone().with(Color::Red)
-                            }
-                        }
-                        None => c.clone().reset(),
-                    };
-                    queue!(buf, style::PrintStyledContent(styled))
-                        .expect("ERROR: Failed to print styled character.");
-                }
-
-                i = j;
-            } else {
-                i += 1;
             }
         }
     }

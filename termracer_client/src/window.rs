@@ -61,7 +61,8 @@ impl Window {
                     c: c.to_string(),
                     fg,
                     bg,
-                }
+                };
+                self.dirty[buffer_row as usize][buffer_column as usize] = true;
             }
         }
     }
@@ -69,13 +70,15 @@ impl Window {
     fn check_coord(&self, row: u16, column: u16, bounds: Rect) -> bool {
         let inside_window = row < self.bounds.height && column < self.bounds.width;
         let inside_bounds = row >= bounds.row
-            && row < bounds.height
+            && row < (bounds.row + bounds.height)
             && column >= bounds.column
-            && column < bounds.width;
+            && column < (bounds.column + bounds.width);
         inside_window && inside_bounds
     }
 
     pub fn display<T: Write>(&mut self, buf: &mut T) {
+        buf.queue(cursor::Hide)
+            .expect("ERROR: Failed to hide cursor.");
         for row in 0..self.bounds.height {
             for col in 0..self.bounds.width {
                 if self.dirty[row as usize][col as usize] {
@@ -211,8 +214,8 @@ mod tests {
             Rect {
                 row: 0,
                 column: 1,
-                width: 3,
-                height: 2,
+                width: 1,
+                height: 1,
             },
         );
         // outside window
@@ -245,7 +248,7 @@ mod tests {
 
         assert_eq!(window.buffer[0][0].c, " ");
         assert_eq!(window.buffer[0][1].c, "b");
-        assert_eq!(window.buffer[0][2].c, "c");
+        assert_eq!(window.buffer[0][2].c, " ");
 
         assert_eq!(window.buffer[1][0].c, " ");
         assert_eq!(window.buffer[1][1].c, " ");

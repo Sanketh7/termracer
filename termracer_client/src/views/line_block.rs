@@ -2,7 +2,7 @@ use super::{
     line::Line,
     view::{KeyEventHandleable, View},
 };
-use crate::rect::Rect;
+use crate::{rect::Rect, window::Window};
 use crossterm::event::{KeyCode, KeyEvent};
 use std::io::Write;
 
@@ -52,6 +52,8 @@ impl LineBlock {
     pub fn reset_cursor<T: Write>(&self, buf: &mut T) {
         if let Some(line) = self.lines.get(self.state.index) {
             line.reset_cursor(buf);
+        } else if let Some(line) = self.lines.get(self.state.index - 1) {
+            line.reset_cursor(buf);
         }
     }
 
@@ -69,9 +71,9 @@ impl LineBlock {
 }
 
 impl View for LineBlock {
-    fn display<T: Write>(&mut self, buf: &mut T) {
+    fn draw(&mut self, window: &mut Window) {
         for line in &mut self.lines {
-            line.display(buf);
+            line.draw(window);
         }
     }
 

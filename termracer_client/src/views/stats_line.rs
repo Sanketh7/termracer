@@ -1,7 +1,6 @@
 use super::view::View;
-use crate::rect::Rect;
-use crossterm::{cursor, queue, style};
-use std::io::Write;
+use crate::{rect::Rect, window::Window};
+use crossterm::style::Color;
 
 macro_rules! STATS_LINE_FORMAT_STRING {
     () => {
@@ -38,17 +37,28 @@ impl StatsLine {
 }
 
 impl View for StatsLine {
-    fn display<T: Write>(&mut self, buf: &mut T) {
+    fn draw(&mut self, window: &mut Window) {
         if self.state.dirty {
             self.state.dirty = false;
-            queue!(
-                buf,
-                cursor::MoveTo(self.bounds.column, self.bounds.row),
-                style::Print(" ".repeat(self.bounds.width as usize)),
-                cursor::MoveTo(self.bounds.column, self.bounds.row),
-                style::Print(format!(STATS_LINE_FORMAT_STRING!(), self.state.wpm as u32))
-            )
-            .expect("ERROR: Failed to draw stats line.");
+
+            let s = format!(STATS_LINE_FORMAT_STRING!(), self.state.wpm as u32);
+
+            window.draw(
+                &" ".repeat(s.len() + 5),
+                Color::Reset,
+                Color::Reset,
+                self.bounds.row,
+                self.bounds.column,
+                self.bounds,
+            );
+            window.draw(
+                &s,
+                Color::White,
+                Color::Reset,
+                self.bounds.row,
+                self.bounds.column,
+                self.bounds,
+            );
         }
     }
 
