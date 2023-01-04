@@ -1,9 +1,7 @@
 use super::view::{KeyEventHandleable, View};
-use crate::{rect::Rect, window::Window};
+use crate::window::Window;
 use crossterm::{
-    cursor,
     event::{KeyCode, KeyEvent},
-    queue,
     style::Color,
 };
 use std::io::Write;
@@ -16,21 +14,18 @@ struct State {
 
 pub struct Line {
     text: Vec<String>,
-    bounds: Rect,
+    region_index: usize,
+    line_index: usize,
     state: State,
 }
 
 impl Line {
-    pub fn new(text: Vec<String>, bounds: Rect) -> Self {
+    pub fn new(text: Vec<String>, region_index: usize, line_index: usize) -> Self {
         let length = text.len();
-        assert!(
-            length <= bounds.width as usize,
-            "ERROR: Line length exceeds bounds."
-        );
-        assert!(bounds.height == 1, "ERROR: Line height must be 1.");
         Line {
             text,
-            bounds,
+            region_index,
+            line_index,
             state: State {
                 index: 0,
                 correct: vec![None; length],
@@ -39,6 +34,7 @@ impl Line {
     }
 
     pub fn reset_cursor<T: Write>(&self, buf: &mut T) {
+        /*
         queue!(
             buf,
             cursor::MoveTo(
@@ -48,6 +44,8 @@ impl Line {
             cursor::Show,
         )
         .expect("ERROR: Failed to reset cursor position.");
+        */
+        todo!("FIX CURSOR!!!!");
     }
 
     pub fn is_correct(&self) -> bool {
@@ -99,15 +97,15 @@ impl View for Line {
                 c,
                 fg,
                 bg,
-                self.bounds.row,
-                self.bounds.column + (i as u16),
-                self.bounds,
+                self.line_index as u16,
+                i as u16,
+                self.region_index,
             )
         }
     }
 
-    fn get_bounds(&self) -> Rect {
-        self.bounds
+    fn get_region_index(&self) -> usize {
+        self.region_index
     }
 }
 
@@ -124,22 +122,13 @@ impl KeyEventHandleable for Line {
 #[cfg(test)]
 mod tests {
     use super::Line;
-    use crate::rect::Rect;
     use unicode_segmentation::UnicodeSegmentation;
 
     #[test]
     fn it_processes_characters() {
         let text = "text";
         let chars = text.graphemes(true).map(String::from).collect();
-        let mut line = Line::new(
-            chars,
-            Rect {
-                row: 0,
-                column: 0,
-                width: 50,
-                height: 1,
-            },
-        );
+        let mut line = Line::new(chars, 0, 0);
 
         line.process_character('t');
         line.process_character('a');
@@ -165,15 +154,7 @@ mod tests {
     fn it_processes_backspaces() {
         let text = "text";
         let chars = text.graphemes(true).map(String::from).collect();
-        let mut line = Line::new(
-            chars,
-            Rect {
-                row: 0,
-                column: 0,
-                width: 50,
-                height: 1,
-            },
-        );
+        let mut line = Line::new(chars, 0, 0);
 
         line.process_backspace();
 
@@ -199,15 +180,7 @@ mod tests {
     fn it_checks_correctness() {
         let text = "text";
         let chars = text.graphemes(true).map(String::from).collect();
-        let mut line = Line::new(
-            chars,
-            Rect {
-                row: 0,
-                column: 0,
-                width: 50,
-                height: 1,
-            },
-        );
+        let mut line = Line::new(chars, 0, 0);
 
         line.process_character('t');
         line.process_character('e');

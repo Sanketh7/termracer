@@ -1,9 +1,9 @@
-use crate::{rect::Rect, window::Window};
+use crate::window::Window;
 use crossterm::event::KeyEvent;
 
 pub trait View {
     fn draw(&mut self, window: &mut Window);
-    fn get_bounds(&self) -> Rect;
+    fn get_region_index(&self) -> usize;
 }
 
 pub trait KeyEventHandleable {

@@ -1,5 +1,5 @@
 use super::view::View;
-use crate::{rect::Rect, window::Window};
+use crate::window::Window;
 use crossterm::style::Color;
 
 macro_rules! STATS_LINE_FORMAT_STRING {
@@ -13,15 +13,14 @@ struct State {
 }
 
 pub struct StatsLine {
-    bounds: Rect,
+    region_index: usize,
     state: State,
 }
 
 impl StatsLine {
-    pub fn new(bounds: Rect) -> Self {
-        assert_eq!(bounds.height, 1, "ERROR: Status line height must be 1.");
+    pub fn new(region_index: usize) -> Self {
         StatsLine {
-            bounds,
+            region_index,
             state: State { wpm: 0.0 },
         }
     }
@@ -39,21 +38,14 @@ impl View for StatsLine {
             &" ".repeat(s.len() + 5),
             Color::Reset,
             Color::Reset,
-            self.bounds.row,
-            self.bounds.column,
-            self.bounds,
+            0,
+            0,
+            self.region_index,
         );
-        window.draw(
-            &s,
-            Color::White,
-            Color::Reset,
-            self.bounds.row,
-            self.bounds.column,
-            self.bounds,
-        );
+        window.draw(&s, Color::White, Color::Reset, 0, 0, self.region_index);
     }
 
-    fn get_bounds(&self) -> Rect {
-        self.bounds
+    fn get_region_index(&self) -> usize {
+        self.region_index
     }
 }

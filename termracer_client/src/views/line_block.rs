@@ -2,7 +2,7 @@ use super::{
     line::Line,
     view::{KeyEventHandleable, View},
 };
-use crate::{rect::Rect, window::Window};
+use crate::window::Window;
 use crossterm::event::{KeyCode, KeyEvent};
 use std::io::Write;
 
@@ -14,34 +14,20 @@ struct State {
 
 pub struct LineBlock {
     lines: Vec<Line>,
-    bounds: Rect,
+    region_index: usize,
     state: State,
 }
 
 impl LineBlock {
-    pub fn new(text_lines: Vec<Vec<String>>, bounds: Rect) -> Self {
+    pub fn new(text_lines: Vec<Vec<String>>, region_index: usize) -> Self {
         let length = text_lines.len();
-        assert!(
-            length <= bounds.height as usize,
-            "ERROR: Number of lines in line block exceeds height."
-        );
         LineBlock {
             lines: text_lines
                 .into_iter()
                 .enumerate()
-                .map(|(i, text)| {
-                    Line::new(
-                        text,
-                        Rect {
-                            row: bounds.row + (i as u16),
-                            column: bounds.column,
-                            width: bounds.width,
-                            height: 1,
-                        },
-                    )
-                })
+                .map(|(line_index, text)| Line::new(text, region_index, line_index))
                 .collect(),
-            bounds,
+            region_index,
             state: State {
                 index: 0,
                 correct: vec![false; length],
@@ -77,8 +63,8 @@ impl View for LineBlock {
         }
     }
 
-    fn get_bounds(&self) -> Rect {
-        self.bounds
+    fn get_region_index(&self) -> usize {
+        self.region_index
     }
 }
 
@@ -97,8 +83,8 @@ impl KeyEventHandleable for LineBlock {
 
 #[cfg(test)]
 mod tests {
-    use super::{LineBlock, Rect};
-    use crate::views::view::KeyEventHandleable;
+    use super::LineBlock;
+    use crate::{rect::Rect, views::view::KeyEventHandleable, window::Window};
     use crossterm::event::{KeyCode, KeyEvent, KeyEventKind, KeyEventState, KeyModifiers};
     use unicode_segmentation::UnicodeSegmentation;
 
@@ -118,15 +104,13 @@ mod tests {
             .split('\n')
             .map(|line| line.graphemes(true).map(String::from).collect())
             .collect();
-        let mut block = LineBlock::new(
-            text_lines,
-            Rect {
-                row: 0,
-                column: 0,
-                width: 50,
-                height: 50,
-            },
-        );
+        let window = Window::new(Rect {
+            row: 0,
+            column: 0,
+            width: 50,
+            height: 50,
+        });
+        let mut block = LineBlock::new(text_lines, 0);
 
         block.handle_key_event(create_char_key_event(KeyCode::Char('a')));
         block.handle_key_event(create_char_key_event(KeyCode::Char('c')));
