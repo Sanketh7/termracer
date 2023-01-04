@@ -1,4 +1,4 @@
-use crate::rect::{HorizontalSplit, Rect, VerticalSplit};
+use crate::{rect::{Coord, Rect}, layout::{Layout, VerticalSplitKind, HorizontalSplitKind}};
 use crossterm::{
     cursor,
     style::{self, Color, Stylize},
@@ -30,49 +30,26 @@ type Buffer = Vec<Vec<Cell>>;
 pub struct Window {
     // bounds of entire window
     bounds: Rect,
-    regions: Vec<Rect>,
+    layout: Layout,
     buffer: Buffer,
     dirty: Vec<Vec<bool>>,
 }
 
 impl Window {
-    pub fn new(bounds: Rect) -> Self {
-        let width = bounds.width;
-        let height = bounds.height;
+    pub fn new(width: u16, height: u16) -> Self {
+        let bounds = Rect {
+            coord: Coord { row: 0, col: 0 },
+            width,
+            height,
+        };
         Window {
             bounds,
-            // default region covers entire window
-            regions: vec![bounds],
+            layout: Layout::new(bounds),
             buffer: vec![vec![Cell::new(); width as usize]; height as usize],
             dirty: vec![vec![false; width as usize]; height as usize],
         }
     }
 
-    pub fn vertical_split(&mut self, split: VerticalSplit, region_index: usize) -> (usize, usize) {
-        let region = self
-            .regions
-            .get_mut(region_index)
-            .expect("ERROR: Failed to split region -- invalid region index.");
-        let (left, right) = region.vertical_split(split);
-        *region = left;
-        self.regions.push(right);
-        (region_index, self.regions.len() - 1)
-    }
-
-    pub fn horizontal_split(
-        &mut self,
-        split: HorizontalSplit,
-        region_index: usize,
-    ) -> (usize, usize) {
-        let region = self
-            .regions
-            .get_mut(region_index)
-            .expect("ERROR: Failed to split region -- invalid region index.");
-        let (top, bottom) = region.horizontal_split(split);
-        *region = top;
-        self.regions.push(bottom);
-        (region_index, self.regions.len() - 1)
-    }
 
     // row and column are relative to region
     pub fn draw(
@@ -89,9 +66,7 @@ impl Window {
             chars.iter().all(|c| c.width() == 1),
             "ERROR: Window only supports drawing characters with width == 1."
         );
-        let region_bounds = self
-            .regions
-            .get(region_index)
+        let region_bounds = self.layout.region(region_index)
             .expect("ERROR: Failed to draw -- invalid region index.");
 
         for (dcol, c) in chars.into_iter().enumerate() {
@@ -114,16 +89,36 @@ impl Window {
         }
     }
 
+    pub fn vertical_split(&mut self, split: VerticalSplitKind, region_index: usize) -> (usize, usize) {
+        self.layout.vertical_split(split, region_index) 
+    }
+
+    pub fn horizontal_split(&mut self, split: HorizontalSplitKind, region_index: usize) -> (usize, usize) {
+        self.layout.horizontal_split(split, region_index) 
+    }
+
+    pub fn resize(&mut self, new_width: u16, new_height: u16) {
+        let new_bounds = 
+            Rect {
+                coord: Coord { row: 0, col: 0 },
+                width: new_width,
+                height: new_height,
+            };
+        self.layout.resize(new_bounds); 
+
+        self.bounds = new_bounds;
+        self.buffer = vec![vec![Cell::new(); new_width as usize]; new_height as usize];
+        self.dirty = vec![vec![true; new_width as usize]; new_height as usize];
+    }
+
     pub fn clear(&mut self) {
-        for i in 0..self.regions.len() {
+        for i in 0..self.layout.regions().len() {
             self.clear_region(i);
         }
     }
 
     pub fn clear_region(&mut self, region_index: usize) {
-        let region_bounds = self
-            .regions
-            .get(region_index)
+        let region_bounds = self.layout.region(region_index)
             .expect("ERROR: Failed to clear region -- invalid region index.");
         let clear_text = " ".repeat(region_bounds.width as usize);
         for row in region_bounds.coord.row..(region_bounds.coord.row + region_bounds.height) {
@@ -139,9 +134,7 @@ impl Window {
     }
 
     fn check_coord(&self, region_row: u16, region_column: u16, region_index: usize) -> bool {
-        let region_bounds = self
-            .regions
-            .get(region_index)
+        let region_bounds = self.layout.region(region_index)
             .expect("ERROR: Invalid region index.");
         let window_row = region_row + region_bounds.coord.row;
         let window_column = region_column + region_bounds.coord.col;
@@ -181,45 +174,13 @@ impl Window {
 
 #[cfg(test)]
 mod tests {
-    use super::Window;
-    use crate::rect::{Coord, HorizontalSplit, Rect, VerticalSplit};
     use crossterm::style::Color;
+    use crate::{window::Window, layout::{VerticalSplitKind, HorizontalSplitKind}};
 
-    #[test]
-    fn it_splits_vertically() {
-        let mut window = Window::new(Rect {
-            coord: Coord { row: 0, col: 0 },
-            width: 100,
-            height: 50,
-        });
-        let (left, right) = window.vertical_split(VerticalSplit::CellsinLeft(30), 0);
-
-        assert_eq!((left, right), (0, 1));
-        assert_eq!(window.regions[left].width, 30);
-        assert_eq!(window.regions[right].width, 70);
-    }
-
-    #[test]
-    fn it_splits_horizontally() {
-        let mut window = Window::new(Rect {
-            coord: Coord { row: 0, col: 0 },
-            width: 100,
-            height: 50,
-        });
-        let (top, bottom) = window.horizontal_split(HorizontalSplit::CellsinTop(30), 0);
-
-        assert_eq!((top, bottom), (0, 1));
-        assert_eq!(window.regions[top].height, 30);
-        assert_eq!(window.regions[bottom].height, 20);
-    }
 
     #[test]
     fn it_draws_within_window() {
-        let mut window = Window::new(Rect {
-            coord: Coord { row: 0, col: 0 },
-            width: 3,
-            height: 2,
-        });
+        let mut window = Window::new(3, 2);
         window.draw("abcd", Color::Reset, Color::Reset, 0, 0, 0);
         window.draw("ef", Color::Reset, Color::Reset, 1, 1, 0);
 
@@ -234,11 +195,7 @@ mod tests {
 
     #[test]
     fn it_draws_overlap() {
-        let mut window = Window::new(Rect {
-            coord: Coord { row: 0, col: 0 },
-            width: 3,
-            height: 2,
-        });
+        let mut window = Window::new(3, 2);
         window.draw("abcd", Color::Reset, Color::Reset, 0, 0, 0);
         window.draw("ef", Color::Reset, Color::Reset, 0, 1, 0);
 
@@ -253,14 +210,10 @@ mod tests {
 
     #[test]
     fn it_draws_within_region() {
-        let mut window = Window::new(Rect {
-            coord: Coord { row: 0, col: 0 },
-            width: 3,
-            height: 3,
-        });
-        let (left, right) = window.vertical_split(VerticalSplit::CellsinLeft(1), 0);
+        let mut window = Window::new(3, 3);
+        let (left, right) = window.vertical_split(VerticalSplitKind::CellsInLeft(1), 0);
         let (right_top, right_bottom) =
-            window.horizontal_split(HorizontalSplit::CellsinTop(1), right);
+            window.horizontal_split(HorizontalSplitKind::CellsInTop(1), right);
         /*
         +---+---+---+
         | a | x   y |
@@ -291,11 +244,7 @@ mod tests {
     #[test]
     fn it_sets_dirty_bit() {
         let mut mock_stdout = Vec::new();
-        let mut window = Window::new(Rect {
-            coord: Coord { row: 0, col: 0 },
-            width: 3,
-            height: 2,
-        });
+        let mut window = Window::new(3, 2);
 
         window.draw("abcd", Color::Reset, Color::Reset, 0, 0, 0);
 
@@ -317,11 +266,7 @@ mod tests {
     #[test]
     fn it_doesnt_set_dirty_bit() {
         let mut mock_stdout = Vec::new();
-        let mut window = Window::new(Rect {
-            coord: Coord { row: 0, col: 0 },
-            width: 3,
-            height: 2,
-        });
+        let mut window = Window::new(3, 2);
 
         window.draw("abcd", Color::Reset, Color::Reset, 0, 0, 0);
 
@@ -344,14 +289,10 @@ mod tests {
 
     #[test]
     fn it_clears_region() {
-        let mut window = Window::new(Rect {
-            coord: Coord { row: 0, col: 0 },
-            width: 3,
-            height: 3,
-        });
-        let (left, right) = window.vertical_split(VerticalSplit::CellsinLeft(1), 0);
+        let mut window = Window::new(3, 3);
+        let (left, right) = window.vertical_split(VerticalSplitKind::CellsInLeft(1), 0);
         let (right_top, right_bottom) =
-            window.horizontal_split(HorizontalSplit::CellsinTop(1), right);
+            window.horizontal_split(HorizontalSplitKind::CellsInTop(1), right);
         /*
         +---+---+---+
         | a | x   y |

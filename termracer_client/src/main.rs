@@ -2,7 +2,7 @@ use crossterm::{
     event::{self, Event, KeyCode},
     execute, terminal,
 };
-use rect::{Coord, HorizontalSplit, Rect};
+use layout::HorizontalSplitKind;
 use std::io::{self, Write};
 use std::time::Duration;
 use unicode_segmentation::UnicodeSegmentation;
@@ -16,6 +16,7 @@ use window::Window;
 mod rect;
 mod views;
 mod window;
+mod layout;
 
 fn main() {
     let mut buf = io::stdout();
@@ -23,13 +24,11 @@ fn main() {
         .expect("ERROR: Failed to enter alternate screen.");
     terminal::enable_raw_mode().expect("ERROR: Failed to enable raw mode.");
 
-    let mut window = Window::new(Rect {
-        coord: Coord { row: 0, col: 0 },
-        width: 50,
-        height: 50,
-    });
+    let (term_width, term_height) = terminal::size().expect("ERROR: Failed to get terminal size.");
+
+    let mut window = Window::new(term_width, term_height);
     let (block_region, stats_region) =
-        window.horizontal_split(HorizontalSplit::CellsInBottom(1), 0);
+        window.horizontal_split(HorizontalSplitKind::CellsInBottom(1), 0);
 
     let text = "A lot of sample text oh boy\n".repeat(49).to_owned();
     let text_lines = text
@@ -47,6 +46,10 @@ fn main() {
                     KeyCode::Esc => break,
                     _ => block.handle_key_event(key_event),
                 },
+                Event::Resize(width, height) => {
+                    window.resize(width, height);
+                    window.clear();
+                }
                 _ => (),
             }
         } else {
