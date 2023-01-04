@@ -57,12 +57,18 @@ impl Window {
             if self.check_coord(row, column + (dcol as u16), bounds) {
                 let buffer_row = row;
                 let buffer_column = column + (dcol as u16);
-                self.buffer[buffer_row as usize][buffer_column as usize] = Cell {
+
+                let cell = &mut self.buffer[buffer_row as usize][buffer_column as usize];
+                let new_cell = Cell {
                     c: c.to_string(),
                     fg,
                     bg,
                 };
-                self.dirty[buffer_row as usize][buffer_column as usize] = true;
+
+                if cell != &new_cell {
+                    *cell = new_cell;
+                    self.dirty[buffer_row as usize][buffer_column as usize] = true;
+                }
             }
         }
     }
@@ -253,5 +259,97 @@ mod tests {
         assert_eq!(window.buffer[1][0].c, " ");
         assert_eq!(window.buffer[1][1].c, " ");
         assert_eq!(window.buffer[1][2].c, "e");
+    }
+
+    #[test]
+    fn it_sets_dirty_bit() {
+        let mut mock_stdout = Vec::new();
+        let mut window = Window::new(Rect {
+            row: 0,
+            column: 0,
+            width: 3,
+            height: 2,
+        });
+
+        window.draw(
+            "abcd",
+            Color::Reset,
+            Color::Reset,
+            0,
+            0,
+            Rect {
+                row: 0,
+                column: 0,
+                width: 3,
+                height: 2,
+            },
+        );
+
+        assert_eq!(window.buffer[0][0].c, "a");
+        assert_eq!(window.buffer[0][1].c, "b");
+        assert_eq!(window.buffer[0][2].c, "c");
+
+        assert_eq!(window.dirty[0][0], true);
+        assert_eq!(window.dirty[0][1], true);
+        assert_eq!(window.dirty[0][2], true);
+
+        window.display(&mut mock_stdout);
+
+        assert_eq!(window.dirty[0][0], false);
+        assert_eq!(window.dirty[0][1], false);
+        assert_eq!(window.dirty[0][2], false);
+    }
+
+    #[test]
+    fn it_doesnt_set_dirty_bit() {
+        let mut mock_stdout = Vec::new();
+        let mut window = Window::new(Rect {
+            row: 0,
+            column: 0,
+            width: 3,
+            height: 2,
+        });
+
+        window.draw(
+            "abcd",
+            Color::Reset,
+            Color::Reset,
+            0,
+            0,
+            Rect {
+                row: 0,
+                column: 0,
+                width: 3,
+                height: 2,
+            },
+        );
+
+        assert_eq!(window.buffer[0][0].c, "a");
+        assert_eq!(window.buffer[0][1].c, "b");
+        assert_eq!(window.buffer[0][2].c, "c");
+
+        assert_eq!(window.dirty[0][0], true);
+        assert_eq!(window.dirty[0][1], true);
+        assert_eq!(window.dirty[0][2], true);
+
+        window.display(&mut mock_stdout);
+
+        window.draw(
+            "abd",
+            Color::Reset,
+            Color::Reset,
+            0,
+            0,
+            Rect {
+                row: 0,
+                column: 0,
+                width: 3,
+                height: 2,
+            },
+        );
+
+        assert_eq!(window.dirty[0][0], false);
+        assert_eq!(window.dirty[0][1], false);
+        assert_eq!(window.dirty[0][2], true);
     }
 }

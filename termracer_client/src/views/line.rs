@@ -12,7 +12,6 @@ struct State {
     // index of current char to be inputted
     index: usize,
     correct: Vec<Option<bool>>,
-    dirty: Vec<bool>,
 }
 
 pub struct Line {
@@ -35,7 +34,6 @@ impl Line {
             state: State {
                 index: 0,
                 correct: vec![None; length],
-                dirty: vec![true; length],
             },
         }
     }
@@ -60,7 +58,6 @@ impl Line {
         if self.state.index < self.text.len() {
             self.state.correct[self.state.index] =
                 Some(c.to_string() == self.text[self.state.index]);
-            self.state.dirty[self.state.index] = true;
             self.state.index += 1;
         }
     }
@@ -78,38 +75,34 @@ impl Line {
 impl View for Line {
     fn draw(&mut self, window: &mut Window) {
         for (i, c) in self.text.iter().enumerate() {
-            if self.state.dirty[i] {
-                self.state.dirty[i] = false;
+            let fg = if c.contains(char::is_whitespace) {
+                Color::White
+            } else {
+                match self.state.correct[i] {
+                    Some(true) => Color::Green,
+                    Some(false) => Color::Red,
+                    None => Color::White,
+                }
+            };
 
-                let fg = if c.contains(char::is_whitespace) {
-                    Color::White
-                } else {
-                    match self.state.correct[i] {
-                        Some(true) => Color::Green,
-                        Some(false) => Color::Red,
-                        None => Color::White,
-                    }
-                };
+            let bg = if c.contains(char::is_whitespace) {
+                match self.state.correct[i] {
+                    Some(true) => Color::Green,
+                    Some(false) => Color::Red,
+                    None => Color::Reset,
+                }
+            } else {
+                Color::Reset
+            };
 
-                let bg = if c.contains(char::is_whitespace) {
-                    match self.state.correct[i] {
-                        Some(true) => Color::Green,
-                        Some(false) => Color::Red,
-                        None => Color::Reset,
-                    }
-                } else {
-                    Color::Reset
-                };
-
-                window.draw(
-                    c,
-                    fg,
-                    bg,
-                    self.bounds.row,
-                    self.bounds.column + (i as u16),
-                    self.bounds,
-                )
-            }
+            window.draw(
+                c,
+                fg,
+                bg,
+                self.bounds.row,
+                self.bounds.column + (i as u16),
+                self.bounds,
+            )
         }
     }
 
