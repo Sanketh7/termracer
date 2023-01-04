@@ -1,6 +1,5 @@
-use std::{cmp::min, ops::Add};
 use crate::layout::{HorizontalSplitKind, VerticalSplitKind};
-
+use std::{cmp::min, ops::Add};
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Coord {
@@ -13,7 +12,7 @@ impl Add for Coord {
     fn add(self, other: Self) -> Self {
         Coord {
             row: self.row + other.row,
-            col: self.col + other.col
+            col: self.col + other.col,
         }
     }
 }

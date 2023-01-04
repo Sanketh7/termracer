@@ -1,4 +1,4 @@
-use crate::rect::{Rect};
+use crate::rect::Rect;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum HorizontalSplitKind {
@@ -133,11 +133,7 @@ impl Layout {
                 SplitNode::Leaf(i) => regions[*i] = bounds,
             }
         }
-        helper(
-            &mut self.regions,
-            &self.split_tree,
-            new_bounds
-        );
+        helper(&mut self.regions, &self.split_tree, new_bounds);
     }
 
     fn get_split_leaf_mut(&mut self, region_index: usize) -> Option<&mut SplitNode> {
@@ -164,16 +160,22 @@ impl Layout {
         }
         helper(&mut self.split_tree, region_index)
     }
-
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{layout::{VerticalSplitKind, HorizontalSplitKind, Layout, SplitNode}, rect::{Coord, Rect}};
+    use crate::{
+        layout::{HorizontalSplitKind, Layout, SplitNode, VerticalSplitKind},
+        rect::{Coord, Rect},
+    };
 
     #[test]
     fn it_splits_vertically() {
-        let mut layout = Layout::new(Rect {coord: Coord {row: 0, col: 0}, width: 100, height: 50});
+        let mut layout = Layout::new(Rect {
+            coord: Coord { row: 0, col: 0 },
+            width: 100,
+            height: 50,
+        });
         let (left, right) = layout.vertical_split(VerticalSplitKind::CellsInLeft(30), 0);
 
         assert_eq!((left, right), (0, 1));
@@ -183,7 +185,11 @@ mod tests {
 
     #[test]
     fn it_splits_horizontally() {
-        let mut layout = Layout::new(Rect {coord: Coord {row: 0, col: 0}, width: 100, height: 50});
+        let mut layout = Layout::new(Rect {
+            coord: Coord { row: 0, col: 0 },
+            width: 100,
+            height: 50,
+        });
         let (top, bottom) = layout.horizontal_split(HorizontalSplitKind::CellsInTop(30), 0);
 
         assert_eq!((top, bottom), (0, 1));
@@ -193,7 +199,11 @@ mod tests {
 
     #[test]
     fn it_gets_split_leaf() {
-        let mut layout = Layout::new(Rect {coord: Coord {row: 0, col: 0}, width: 100, height: 50});
+        let mut layout = Layout::new(Rect {
+            coord: Coord { row: 0, col: 0 },
+            width: 100,
+            height: 50,
+        });
         let (top, bottom) = layout.horizontal_split(HorizontalSplitKind::CellsInTop(20), 0);
         let (bottom_left, bottom_right) =
             layout.vertical_split(VerticalSplitKind::CellsInLeft(30), bottom);
@@ -214,15 +224,44 @@ mod tests {
 
     #[test]
     fn it_resizes() {
-        let mut layout = Layout::new(Rect {coord: Coord {row: 0, col: 0}, width: 100, height: 50});
+        let mut layout = Layout::new(Rect {
+            coord: Coord { row: 0, col: 0 },
+            width: 100,
+            height: 50,
+        });
         let (top, bottom) = layout.horizontal_split(HorizontalSplitKind::CellsInTop(20), 0);
         let (bottom_left, bottom_right) =
             layout.vertical_split(VerticalSplitKind::PercentInLeft(40), bottom);
 
-        layout.resize(Rect {coord: Coord {row: 0, col: 0}, width: 75, height: 100});
+        layout.resize(Rect {
+            coord: Coord { row: 0, col: 0 },
+            width: 75,
+            height: 100,
+        });
 
-        assert_eq!(layout.regions[top], Rect {coord: Coord {row: 0, col: 0}, width: 75, height: 20});
-        assert_eq!(layout.regions[bottom_left], Rect {coord: Coord {row: 20, col: 0}, width: 30, height: 80});
-        assert_eq!(layout.regions[bottom_right], Rect {coord: Coord {row: 20, col: 30}, width: 45, height: 80});
+        assert_eq!(
+            layout.regions[top],
+            Rect {
+                coord: Coord { row: 0, col: 0 },
+                width: 75,
+                height: 20
+            }
+        );
+        assert_eq!(
+            layout.regions[bottom_left],
+            Rect {
+                coord: Coord { row: 20, col: 0 },
+                width: 30,
+                height: 80
+            }
+        );
+        assert_eq!(
+            layout.regions[bottom_right],
+            Rect {
+                coord: Coord { row: 20, col: 30 },
+                width: 45,
+                height: 80
+            }
+        );
     }
 }

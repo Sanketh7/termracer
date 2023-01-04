@@ -1,5 +1,5 @@
 use super::view::{KeyEventHandleable, View};
-use crate::{window::Window, rect::Coord};
+use crate::{rect::Coord, window::Window};
 use crossterm::{
     event::{KeyCode, KeyEvent},
     style::Color,
@@ -34,7 +34,13 @@ impl Line {
     }
 
     pub fn reset_cursor(&self, window: &mut Window) {
-        window.set_cursor(Coord { row: self.line_index as u16, col: self.state.index as u16}, self.region_index);
+        window.set_cursor(
+            Coord {
+                row: self.line_index as u16,
+                col: self.state.index as u16,
+            },
+            self.region_index,
+        );
     }
 
     pub fn is_correct(&self) -> bool {
@@ -86,7 +92,10 @@ impl View for Line {
                 c,
                 fg,
                 bg,
-                Coord {row: self.line_index as u16, col: i as u16 },
+                Coord {
+                    row: self.line_index as u16,
+                    col: i as u16,
+                },
                 self.region_index,
             )
         }

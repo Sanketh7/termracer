@@ -194,7 +194,8 @@ impl Window {
                 }
             }
         }
-        buf.queue(cursor::MoveTo(self.cursor_pos.col, self.cursor_pos.row)).expect("ERROR: Failed to move cursor.");
+        buf.queue(cursor::MoveTo(self.cursor_pos.col, self.cursor_pos.row))
+            .expect("ERROR: Failed to move cursor.");
     }
 }
 

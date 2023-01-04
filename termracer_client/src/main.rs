@@ -13,10 +13,10 @@ use views::{
 };
 use window::Window;
 
+mod layout;
 mod rect;
 mod views;
 mod window;
-mod layout;
 
 fn main() {
     let mut buf = io::stdout();

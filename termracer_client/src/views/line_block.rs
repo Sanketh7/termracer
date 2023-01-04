@@ -2,7 +2,7 @@ use super::{
     line::Line,
     view::{KeyEventHandleable, View},
 };
-use crate::window::{Window, self};
+use crate::window::{self, Window};
 use crossterm::event::{KeyCode, KeyEvent};
 use std::io::Write;
 
