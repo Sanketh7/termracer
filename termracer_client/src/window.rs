@@ -1,4 +1,7 @@
-use crate::{rect::{Coord, Rect}, layout::{Layout, VerticalSplitKind, HorizontalSplitKind}};
+use crate::{
+    layout::{HorizontalSplitKind, Layout, VerticalSplitKind},
+    rect::{Coord, Rect},
+};
 use crossterm::{
     cursor,
     style::{self, Color, Stylize},
@@ -33,6 +36,7 @@ pub struct Window {
     layout: Layout,
     buffer: Buffer,
     dirty: Vec<Vec<bool>>,
+    cursor_pos: Coord,
 }
 
 impl Window {
@@ -47,9 +51,9 @@ impl Window {
             layout: Layout::new(bounds),
             buffer: vec![vec![Cell::new(); width as usize]; height as usize],
             dirty: vec![vec![false; width as usize]; height as usize],
+            cursor_pos: Coord { row: 0, col: 0 },
         }
     }
-
 
     // row and column are relative to region
     pub fn draw(
@@ -57,8 +61,7 @@ impl Window {
         s: &str,
         fg: Color,
         bg: Color,
-        region_row: u16,
-        region_column: u16,
+        region_coord: Coord,
         region_index: usize,
     ) {
         let chars: Vec<&str> = s.graphemes(true).collect();
@@ -66,13 +69,19 @@ impl Window {
             chars.iter().all(|c| c.width() == 1),
             "ERROR: Window only supports drawing characters with width == 1."
         );
-        let region_bounds = self.layout.region(region_index)
+        let region_bounds = self
+            .layout
+            .region(region_index)
             .expect("ERROR: Failed to draw -- invalid region index.");
 
         for (dcol, c) in chars.into_iter().enumerate() {
-            if self.check_coord(region_row, region_column + (dcol as u16), region_index) {
-                let window_row = region_bounds.coord.row + region_row;
-                let window_column = region_bounds.coord.col + region_column + (dcol as u16);
+            if self.check_coord(
+                region_coord.row,
+                region_coord.col + (dcol as u16),
+                region_index,
+            ) {
+                let window_row = region_bounds.coord.row + region_coord.row;
+                let window_column = region_bounds.coord.col + region_coord.col + (dcol as u16);
 
                 let cell = &mut self.buffer[window_row as usize][window_column as usize];
                 let new_cell = Cell {
@@ -89,22 +98,37 @@ impl Window {
         }
     }
 
-    pub fn vertical_split(&mut self, split: VerticalSplitKind, region_index: usize) -> (usize, usize) {
-        self.layout.vertical_split(split, region_index) 
+    pub fn set_cursor(&mut self, region_coord: Coord, region_index: usize) {
+        let region = self
+            .layout
+            .region(region_index)
+            .expect("ERROR: Failed to set cursor position -- invalid region index.");
+        self.cursor_pos = region.coord + region_coord;
     }
 
-    pub fn horizontal_split(&mut self, split: HorizontalSplitKind, region_index: usize) -> (usize, usize) {
-        self.layout.horizontal_split(split, region_index) 
+    pub fn vertical_split(
+        &mut self,
+        split: VerticalSplitKind,
+        region_index: usize,
+    ) -> (usize, usize) {
+        self.layout.vertical_split(split, region_index)
+    }
+
+    pub fn horizontal_split(
+        &mut self,
+        split: HorizontalSplitKind,
+        region_index: usize,
+    ) -> (usize, usize) {
+        self.layout.horizontal_split(split, region_index)
     }
 
     pub fn resize(&mut self, new_width: u16, new_height: u16) {
-        let new_bounds = 
-            Rect {
-                coord: Coord { row: 0, col: 0 },
-                width: new_width,
-                height: new_height,
-            };
-        self.layout.resize(new_bounds); 
+        let new_bounds = Rect {
+            coord: Coord { row: 0, col: 0 },
+            width: new_width,
+            height: new_height,
+        };
+        self.layout.resize(new_bounds);
 
         self.bounds = new_bounds;
         self.buffer = vec![vec![Cell::new(); new_width as usize]; new_height as usize];
@@ -118,7 +142,9 @@ impl Window {
     }
 
     pub fn clear_region(&mut self, region_index: usize) {
-        let region_bounds = self.layout.region(region_index)
+        let region_bounds = self
+            .layout
+            .region(region_index)
             .expect("ERROR: Failed to clear region -- invalid region index.");
         let clear_text = " ".repeat(region_bounds.width as usize);
         for row in region_bounds.coord.row..(region_bounds.coord.row + region_bounds.height) {
@@ -126,15 +152,16 @@ impl Window {
                 &clear_text,
                 Color::Reset,
                 Color::Reset,
-                row,
-                0,
+                Coord { row, col: 0 },
                 region_index,
             );
         }
     }
 
     fn check_coord(&self, region_row: u16, region_column: u16, region_index: usize) -> bool {
-        let region_bounds = self.layout.region(region_index)
+        let region_bounds = self
+            .layout
+            .region(region_index)
             .expect("ERROR: Invalid region index.");
         let window_row = region_row + region_bounds.coord.row;
         let window_column = region_column + region_bounds.coord.col;
@@ -147,8 +174,6 @@ impl Window {
     }
 
     pub fn display<T: Write>(&mut self, buf: &mut T) {
-        buf.queue(cursor::Hide)
-            .expect("ERROR: Failed to hide cursor.");
         for row in 0..self.bounds.height {
             for col in 0..self.bounds.width {
                 if self.dirty[row as usize][col as usize] {
@@ -169,20 +194,36 @@ impl Window {
                 }
             }
         }
+        buf.queue(cursor::MoveTo(self.cursor_pos.col, self.cursor_pos.row)).expect("ERROR: Failed to move cursor.");
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use crate::{
+        layout::{HorizontalSplitKind, VerticalSplitKind},
+        rect::Coord,
+        window::Window,
+    };
     use crossterm::style::Color;
-    use crate::{window::Window, layout::{VerticalSplitKind, HorizontalSplitKind}};
-
 
     #[test]
     fn it_draws_within_window() {
         let mut window = Window::new(3, 2);
-        window.draw("abcd", Color::Reset, Color::Reset, 0, 0, 0);
-        window.draw("ef", Color::Reset, Color::Reset, 1, 1, 0);
+        window.draw(
+            "abcd",
+            Color::Reset,
+            Color::Reset,
+            Coord { row: 0, col: 0 },
+            0,
+        );
+        window.draw(
+            "ef",
+            Color::Reset,
+            Color::Reset,
+            Coord { row: 1, col: 1 },
+            0,
+        );
 
         assert_eq!(window.buffer[0][0].c, "a");
         assert_eq!(window.buffer[0][1].c, "b");
@@ -196,8 +237,20 @@ mod tests {
     #[test]
     fn it_draws_overlap() {
         let mut window = Window::new(3, 2);
-        window.draw("abcd", Color::Reset, Color::Reset, 0, 0, 0);
-        window.draw("ef", Color::Reset, Color::Reset, 0, 1, 0);
+        window.draw(
+            "abcd",
+            Color::Reset,
+            Color::Reset,
+            Coord { row: 0, col: 0 },
+            0,
+        );
+        window.draw(
+            "ef",
+            Color::Reset,
+            Color::Reset,
+            Coord { row: 0, col: 1 },
+            0,
+        );
 
         assert_eq!(window.buffer[0][0].c, "a");
         assert_eq!(window.buffer[0][1].c, "e");
@@ -224,9 +277,27 @@ mod tests {
         +---+---+---+
         */
 
-        window.draw("abc", Color::Reset, Color::Reset, 0, 0, left);
-        window.draw("def", Color::Reset, Color::Reset, 1, 0, right_bottom);
-        window.draw("xyz", Color::Reset, Color::Reset, 0, 0, right_top);
+        window.draw(
+            "abc",
+            Color::Reset,
+            Color::Reset,
+            Coord { row: 0, col: 0 },
+            left,
+        );
+        window.draw(
+            "def",
+            Color::Reset,
+            Color::Reset,
+            Coord { row: 1, col: 0 },
+            right_bottom,
+        );
+        window.draw(
+            "xyz",
+            Color::Reset,
+            Color::Reset,
+            Coord { row: 0, col: 0 },
+            right_top,
+        );
 
         assert_eq!(window.buffer[0][0].c, "a");
         assert_eq!(window.buffer[0][1].c, "x");
@@ -246,7 +317,13 @@ mod tests {
         let mut mock_stdout = Vec::new();
         let mut window = Window::new(3, 2);
 
-        window.draw("abcd", Color::Reset, Color::Reset, 0, 0, 0);
+        window.draw(
+            "abcd",
+            Color::Reset,
+            Color::Reset,
+            Coord { row: 0, col: 0 },
+            0,
+        );
 
         assert_eq!(window.buffer[0][0].c, "a");
         assert_eq!(window.buffer[0][1].c, "b");
@@ -268,7 +345,13 @@ mod tests {
         let mut mock_stdout = Vec::new();
         let mut window = Window::new(3, 2);
 
-        window.draw("abcd", Color::Reset, Color::Reset, 0, 0, 0);
+        window.draw(
+            "abcd",
+            Color::Reset,
+            Color::Reset,
+            Coord { row: 0, col: 0 },
+            0,
+        );
 
         assert_eq!(window.buffer[0][0].c, "a");
         assert_eq!(window.buffer[0][1].c, "b");
@@ -280,7 +363,13 @@ mod tests {
 
         window.display(&mut mock_stdout);
 
-        window.draw("abd", Color::Reset, Color::Reset, 0, 0, 0);
+        window.draw(
+            "abd",
+            Color::Reset,
+            Color::Reset,
+            Coord { row: 0, col: 0 },
+            0,
+        );
 
         assert_eq!(window.dirty[0][0], false);
         assert_eq!(window.dirty[0][1], false);
@@ -303,9 +392,27 @@ mod tests {
         +---+---+---+
         */
 
-        window.draw("abc", Color::Reset, Color::Reset, 0, 0, left);
-        window.draw("def", Color::Reset, Color::Reset, 1, 0, right_bottom);
-        window.draw("xyz", Color::Reset, Color::Reset, 0, 0, right_top);
+        window.draw(
+            "abc",
+            Color::Reset,
+            Color::Reset,
+            Coord { row: 0, col: 0 },
+            left,
+        );
+        window.draw(
+            "def",
+            Color::Reset,
+            Color::Reset,
+            Coord { row: 1, col: 1 },
+            right_bottom,
+        );
+        window.draw(
+            "xyz",
+            Color::Reset,
+            Color::Reset,
+            Coord { row: 0, col: 0 },
+            right_top,
+        );
 
         window.clear_region(right_bottom);
 

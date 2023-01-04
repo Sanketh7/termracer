@@ -2,7 +2,7 @@ use super::{
     line::Line,
     view::{KeyEventHandleable, View},
 };
-use crate::window::Window;
+use crate::window::{Window, self};
 use crossterm::event::{KeyCode, KeyEvent};
 use std::io::Write;
 
@@ -35,11 +35,11 @@ impl LineBlock {
         }
     }
 
-    pub fn reset_cursor<T: Write>(&self, buf: &mut T) {
+    pub fn reset_cursor(&self, window: &mut Window) {
         if let Some(line) = self.lines.get(self.state.index) {
-            line.reset_cursor(buf);
+            line.reset_cursor(window);
         } else if let Some(line) = self.lines.get(self.state.index - 1) {
-            line.reset_cursor(buf);
+            line.reset_cursor(window);
         }
     }
 

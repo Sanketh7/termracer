@@ -1,5 +1,4 @@
-use crate::rect::{Rect, Coord};
-
+use crate::rect::{Rect};
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum HorizontalSplitKind {

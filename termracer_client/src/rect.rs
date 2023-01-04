@@ -1,4 +1,4 @@
-use std::cmp::min;
+use std::{cmp::min, ops::Add};
 use crate::layout::{HorizontalSplitKind, VerticalSplitKind};
 
 
@@ -6,6 +6,16 @@ use crate::layout::{HorizontalSplitKind, VerticalSplitKind};
 pub struct Coord {
     pub row: u16,
     pub col: u16,
+}
+
+impl Add for Coord {
+    type Output = Self;
+    fn add(self, other: Self) -> Self {
+        Coord {
+            row: self.row + other.row,
+            col: self.col + other.col
+        }
+    }
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]

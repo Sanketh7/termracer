@@ -57,7 +57,7 @@ fn main() {
             block.draw(&mut window);
             stats.draw(&mut window);
             window.display(&mut buf);
-            // block.reset_cursor(&mut buf);
+            block.reset_cursor(&mut window);
             buf.flush().expect("ERROR: Failed to flush buffer.");
             wpm += 10.0;
         }

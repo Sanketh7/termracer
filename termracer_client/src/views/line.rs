@@ -1,5 +1,5 @@
 use super::view::{KeyEventHandleable, View};
-use crate::window::Window;
+use crate::{window::Window, rect::Coord};
 use crossterm::{
     event::{KeyCode, KeyEvent},
     style::Color,
@@ -33,19 +33,8 @@ impl Line {
         }
     }
 
-    pub fn reset_cursor<T: Write>(&self, buf: &mut T) {
-        /*
-        queue!(
-            buf,
-            cursor::MoveTo(
-                self.bounds.column + (self.state.index as u16),
-                self.bounds.row
-            ),
-            cursor::Show,
-        )
-        .expect("ERROR: Failed to reset cursor position.");
-        */
-        todo!("FIX CURSOR!!!!");
+    pub fn reset_cursor(&self, window: &mut Window) {
+        window.set_cursor(Coord { row: self.line_index as u16, col: self.state.index as u16}, self.region_index);
     }
 
     pub fn is_correct(&self) -> bool {
@@ -97,8 +86,7 @@ impl View for Line {
                 c,
                 fg,
                 bg,
-                self.line_index as u16,
-                i as u16,
+                Coord {row: self.line_index as u16, col: i as u16 },
                 self.region_index,
             )
         }
