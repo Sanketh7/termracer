@@ -114,6 +114,30 @@ impl Window {
         }
     }
 
+    pub fn clear(&mut self) {
+        for i in 0..self.regions.len() {
+            self.clear_region(i);
+        }
+    }
+
+    pub fn clear_region(&mut self, region_index: usize) {
+        let region_bounds = self
+            .regions
+            .get(region_index)
+            .expect("ERROR: Failed to clear region -- invalid region index.");
+        let clear_text = " ".repeat(region_bounds.width as usize);
+        for row in region_bounds.coord.row..(region_bounds.coord.row + region_bounds.height) {
+            self.draw(
+                &clear_text,
+                Color::Reset,
+                Color::Reset,
+                row,
+                0,
+                region_index,
+            );
+        }
+    }
+
     fn check_coord(&self, region_row: u16, region_column: u16, region_index: usize) -> bool {
         let region_bounds = self
             .regions
@@ -316,5 +340,44 @@ mod tests {
         assert_eq!(window.dirty[0][0], false);
         assert_eq!(window.dirty[0][1], false);
         assert_eq!(window.dirty[0][2], true);
+    }
+
+    #[test]
+    fn it_clears_region() {
+        let mut window = Window::new(Rect {
+            coord: Coord { row: 0, col: 0 },
+            width: 3,
+            height: 3,
+        });
+        let (left, right) = window.vertical_split(VerticalSplit::CellsinLeft(1), 0);
+        let (right_top, right_bottom) =
+            window.horizontal_split(HorizontalSplit::CellsinTop(1), right);
+        /*
+        +---+---+---+
+        | a | x   y |
+        +   +---+---+
+        |   |       |
+        +   +       +
+        |   |       |
+        +---+---+---+
+        */
+
+        window.draw("abc", Color::Reset, Color::Reset, 0, 0, left);
+        window.draw("def", Color::Reset, Color::Reset, 1, 0, right_bottom);
+        window.draw("xyz", Color::Reset, Color::Reset, 0, 0, right_top);
+
+        window.clear_region(right_bottom);
+
+        assert_eq!(window.buffer[0][0].c, "a");
+        assert_eq!(window.buffer[0][1].c, "x");
+        assert_eq!(window.buffer[0][2].c, "y");
+
+        assert_eq!(window.buffer[1][0].c, " ");
+        assert_eq!(window.buffer[1][1].c, " ");
+        assert_eq!(window.buffer[1][2].c, " ");
+
+        assert_eq!(window.buffer[2][0].c, " ");
+        assert_eq!(window.buffer[2][1].c, " ");
+        assert_eq!(window.buffer[2][2].c, " ");
     }
 }

@@ -33,15 +33,7 @@ impl StatsLine {
 impl View for StatsLine {
     fn draw(&mut self, window: &mut Window) {
         let s = format!(STATS_LINE_FORMAT_STRING!(), self.state.wpm as u32);
-
-        window.draw(
-            &" ".repeat(s.len() + 5),
-            Color::Reset,
-            Color::Reset,
-            0,
-            0,
-            self.region_index,
-        );
+        window.clear_region(self.region_index);
         window.draw(&s, Color::White, Color::Reset, 0, 0, self.region_index);
     }
 
