@@ -15,9 +15,14 @@ pub enum VerticalSplit {
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub struct Rect {
+pub struct Coord {
     pub row: u16,
-    pub column: u16,
+    pub col: u16,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub struct Rect {
+    pub coord: Coord,
     pub width: u16,
     pub height: u16,
 }
@@ -26,14 +31,15 @@ impl Rect {
     pub fn vertical_split(&self, split: VerticalSplit) -> (Rect, Rect) {
         let helper = |cells_in_left: u16| -> (Rect, Rect) {
             let left = Rect {
-                row: self.row,
-                column: self.column,
+                coord: self.coord,
                 width: min(cells_in_left, self.width),
                 height: self.height,
             };
             let right = Rect {
-                row: self.row,
-                column: self.column + left.width,
+                coord: Coord {
+                    row: self.coord.row,
+                    col: self.coord.col + left.width,
+                },
                 width: self.width - left.width,
                 height: self.height,
             };
@@ -64,14 +70,15 @@ impl Rect {
     pub fn horizontal_split(&self, split: HorizontalSplit) -> (Rect, Rect) {
         let helper = |cells_in_top: u16| -> (Rect, Rect) {
             let top = Rect {
-                row: self.row,
-                column: self.column,
+                coord: self.coord,
                 width: self.width,
                 height: min(cells_in_top, self.height),
             };
             let bottom = Rect {
-                row: self.row + top.height,
-                column: self.column,
+                coord: Coord {
+                    row: self.coord.row + top.height,
+                    col: self.coord.col,
+                },
                 width: self.width,
                 height: self.height - top.height,
             };
@@ -105,15 +112,12 @@ impl Rect {
 
 #[cfg(test)]
 mod tests {
-    use crate::rect::HorizontalSplit;
-
-    use super::{Rect, VerticalSplit};
+    use super::{Coord, HorizontalSplit, Rect, VerticalSplit};
 
     #[test]
     fn it_splits_vertically_by_cells() {
         let r1 = Rect {
-            row: 0,
-            column: 0,
+            coord: Coord { row: 0, col: 0 },
             width: 100,
             height: 50,
         };
@@ -123,8 +127,7 @@ mod tests {
         assert_eq!(
             r1l,
             Rect {
-                row: 0,
-                column: 0,
+                coord: Coord { row: 0, col: 0 },
                 width: 30,
                 height: 50
             }
@@ -132,8 +135,7 @@ mod tests {
         assert_eq!(
             r1r,
             Rect {
-                row: 0,
-                column: 30,
+                coord: Coord { row: 0, col: 30 },
                 width: 70,
                 height: 50
             }
@@ -143,8 +145,7 @@ mod tests {
         assert_eq!(
             r2l,
             Rect {
-                row: 0,
-                column: 0,
+                coord: Coord { row: 0, col: 0 },
                 width: 40,
                 height: 50
             }
@@ -152,8 +153,7 @@ mod tests {
         assert_eq!(
             r2r,
             Rect {
-                row: 0,
-                column: 40,
+                coord: Coord { row: 0, col: 40 },
                 width: 60,
                 height: 50
             }
@@ -163,8 +163,7 @@ mod tests {
     #[test]
     fn it_splits_vertically_by_percent() {
         let r1 = Rect {
-            row: 0,
-            column: 0,
+            coord: Coord { row: 0, col: 0 },
             width: 100,
             height: 50,
         };
@@ -174,8 +173,7 @@ mod tests {
         assert_eq!(
             r1l,
             Rect {
-                row: 0,
-                column: 0,
+                coord: Coord { row: 0, col: 0 },
                 width: 30,
                 height: 50
             }
@@ -183,8 +181,7 @@ mod tests {
         assert_eq!(
             r1r,
             Rect {
-                row: 0,
-                column: 30,
+                coord: Coord { row: 0, col: 30 },
                 width: 70,
                 height: 50
             }
@@ -194,8 +191,7 @@ mod tests {
         assert_eq!(
             r2l,
             Rect {
-                row: 0,
-                column: 0,
+                coord: Coord { row: 0, col: 0 },
                 width: 40,
                 height: 50
             }
@@ -203,8 +199,7 @@ mod tests {
         assert_eq!(
             r2r,
             Rect {
-                row: 0,
-                column: 40,
+                coord: Coord { row: 0, col: 40 },
                 width: 60,
                 height: 50
             }
@@ -214,8 +209,7 @@ mod tests {
     #[test]
     fn it_splits_vertically_overflow() {
         let r1 = Rect {
-            row: 0,
-            column: 0,
+            coord: Coord { row: 0, col: 0 },
             width: 100,
             height: 50,
         };
@@ -225,8 +219,7 @@ mod tests {
         assert_eq!(
             r1l,
             Rect {
-                row: 0,
-                column: 0,
+                coord: Coord { row: 0, col: 0 },
                 width: 100,
                 height: 50
             }
@@ -234,8 +227,7 @@ mod tests {
         assert_eq!(
             r1r,
             Rect {
-                row: 0,
-                column: 100,
+                coord: Coord { row: 0, col: 100 },
                 width: 0,
                 height: 50
             }
@@ -245,8 +237,7 @@ mod tests {
         assert_eq!(
             r2l,
             Rect {
-                row: 0,
-                column: 0,
+                coord: Coord { row: 0, col: 0 },
                 width: 0,
                 height: 50
             }
@@ -254,8 +245,7 @@ mod tests {
         assert_eq!(
             r2r,
             Rect {
-                row: 0,
-                column: 0,
+                coord: Coord { row: 0, col: 0 },
                 width: 100,
                 height: 50
             }
@@ -265,8 +255,7 @@ mod tests {
     #[test]
     fn it_splits_horizontally_by_cells() {
         let r1 = Rect {
-            row: 0,
-            column: 0,
+            coord: Coord { row: 0, col: 0 },
             width: 100,
             height: 50,
         };
@@ -276,8 +265,7 @@ mod tests {
         assert_eq!(
             r1t,
             Rect {
-                row: 0,
-                column: 0,
+                coord: Coord { row: 0, col: 0 },
                 width: 100,
                 height: 30
             }
@@ -285,8 +273,7 @@ mod tests {
         assert_eq!(
             r1b,
             Rect {
-                row: 30,
-                column: 0,
+                coord: Coord { row: 30, col: 0 },
                 width: 100,
                 height: 20
             }
@@ -296,8 +283,7 @@ mod tests {
         assert_eq!(
             r2t,
             Rect {
-                row: 0,
-                column: 0,
+                coord: Coord { row: 0, col: 0 },
                 width: 100,
                 height: 40
             }
@@ -305,8 +291,7 @@ mod tests {
         assert_eq!(
             r2b,
             Rect {
-                row: 40,
-                column: 0,
+                coord: Coord { row: 40, col: 0 },
                 width: 100,
                 height: 10
             }
@@ -316,8 +301,7 @@ mod tests {
     #[test]
     fn it_splits_horizontally_by_percent() {
         let r1 = Rect {
-            row: 0,
-            column: 0,
+            coord: Coord { row: 0, col: 0 },
             width: 100,
             height: 50,
         };
@@ -327,8 +311,7 @@ mod tests {
         assert_eq!(
             r1t,
             Rect {
-                row: 0,
-                column: 0,
+                coord: Coord { row: 0, col: 0 },
                 width: 100,
                 height: 30
             }
@@ -336,8 +319,7 @@ mod tests {
         assert_eq!(
             r1b,
             Rect {
-                row: 30,
-                column: 0,
+                coord: Coord { row: 30, col: 0 },
                 width: 100,
                 height: 20
             }
@@ -347,8 +329,7 @@ mod tests {
         assert_eq!(
             r2t,
             Rect {
-                row: 0,
-                column: 0,
+                coord: Coord { row: 0, col: 0 },
                 width: 100,
                 height: 40
             }
@@ -356,8 +337,7 @@ mod tests {
         assert_eq!(
             r2b,
             Rect {
-                row: 40,
-                column: 0,
+                coord: Coord { row: 40, col: 0 },
                 width: 100,
                 height: 10
             }
@@ -367,8 +347,7 @@ mod tests {
     #[test]
     fn it_splits_horizontally_overflow() {
         let r1 = Rect {
-            row: 0,
-            column: 0,
+            coord: Coord { row: 0, col: 0 },
             width: 100,
             height: 50,
         };
@@ -378,8 +357,7 @@ mod tests {
         assert_eq!(
             r1t,
             Rect {
-                row: 0,
-                column: 0,
+                coord: Coord { row: 0, col: 0 },
                 width: 100,
                 height: 50
             }
@@ -387,8 +365,7 @@ mod tests {
         assert_eq!(
             r1b,
             Rect {
-                row: 50,
-                column: 0,
+                coord: Coord { row: 50, col: 0 },
                 width: 100,
                 height: 0
             }
@@ -398,8 +375,7 @@ mod tests {
         assert_eq!(
             r2t,
             Rect {
-                row: 0,
-                column: 0,
+                coord: Coord { row: 0, col: 0 },
                 width: 100,
                 height: 0
             }
@@ -407,8 +383,7 @@ mod tests {
         assert_eq!(
             r2b,
             Rect {
-                row: 0,
-                column: 0,
+                coord: Coord { row: 0, col: 0 },
                 width: 100,
                 height: 50
             }

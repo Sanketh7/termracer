@@ -2,7 +2,7 @@ use crossterm::{
     event::{self, Event, KeyCode},
     execute, terminal,
 };
-use rect::{HorizontalSplit, Rect};
+use rect::{Coord, HorizontalSplit, Rect};
 use std::io::{self, Write};
 use std::time::Duration;
 use unicode_segmentation::UnicodeSegmentation;
@@ -24,8 +24,7 @@ fn main() {
     terminal::enable_raw_mode().expect("ERROR: Failed to enable raw mode.");
 
     let mut window = Window::new(Rect {
-        row: 0,
-        column: 0,
+        coord: Coord { row: 0, col: 0 },
         width: 50,
         height: 50,
     });

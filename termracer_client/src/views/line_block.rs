@@ -84,7 +84,7 @@ impl KeyEventHandleable for LineBlock {
 #[cfg(test)]
 mod tests {
     use super::LineBlock;
-    use crate::{rect::Rect, views::view::KeyEventHandleable, window::Window};
+    use crate::views::view::KeyEventHandleable;
     use crossterm::event::{KeyCode, KeyEvent, KeyEventKind, KeyEventState, KeyModifiers};
     use unicode_segmentation::UnicodeSegmentation;
 
@@ -104,12 +104,6 @@ mod tests {
             .split('\n')
             .map(|line| line.graphemes(true).map(String::from).collect())
             .collect();
-        let window = Window::new(Rect {
-            row: 0,
-            column: 0,
-            width: 50,
-            height: 50,
-        });
         let mut block = LineBlock::new(text_lines, 0);
 
         block.handle_key_event(create_char_key_event(KeyCode::Char('a')));

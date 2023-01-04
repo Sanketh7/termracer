@@ -96,8 +96,8 @@ impl Window {
 
         for (dcol, c) in chars.into_iter().enumerate() {
             if self.check_coord(region_row, region_column + (dcol as u16), region_index) {
-                let window_row = region_bounds.row + region_row;
-                let window_column = region_bounds.column + region_column + (dcol as u16);
+                let window_row = region_bounds.coord.row + region_row;
+                let window_column = region_bounds.coord.col + region_column + (dcol as u16);
 
                 let cell = &mut self.buffer[window_row as usize][window_column as usize];
                 let new_cell = Cell {
@@ -119,8 +119,8 @@ impl Window {
             .regions
             .get(region_index)
             .expect("ERROR: Invalid region index.");
-        let window_row = region_row + region_bounds.row;
-        let window_column = region_column + region_bounds.column;
+        let window_row = region_row + region_bounds.coord.row;
+        let window_column = region_column + region_bounds.coord.col;
 
         let inside_window = window_row < self.bounds.height && window_column < self.bounds.width;
         let inside_region =
@@ -140,8 +140,8 @@ impl Window {
 
                     let cell = &self.buffer[row as usize][col as usize];
                     buf.queue(cursor::MoveTo(
-                        col + self.bounds.column,
-                        row + self.bounds.row,
+                        col + self.bounds.coord.col,
+                        row + self.bounds.coord.row,
                     ))
                     .and_then(|buf| {
                         buf.queue(style::PrintStyledContent(
@@ -158,14 +158,13 @@ impl Window {
 #[cfg(test)]
 mod tests {
     use super::Window;
-    use crate::rect::{HorizontalSplit, Rect, VerticalSplit};
+    use crate::rect::{Coord, HorizontalSplit, Rect, VerticalSplit};
     use crossterm::style::Color;
 
     #[test]
     fn it_splits_vertically() {
         let mut window = Window::new(Rect {
-            row: 0,
-            column: 0,
+            coord: Coord { row: 0, col: 0 },
             width: 100,
             height: 50,
         });
@@ -179,8 +178,7 @@ mod tests {
     #[test]
     fn it_splits_horizontally() {
         let mut window = Window::new(Rect {
-            row: 0,
-            column: 0,
+            coord: Coord { row: 0, col: 0 },
             width: 100,
             height: 50,
         });
@@ -194,8 +192,7 @@ mod tests {
     #[test]
     fn it_draws_within_window() {
         let mut window = Window::new(Rect {
-            row: 0,
-            column: 0,
+            coord: Coord { row: 0, col: 0 },
             width: 3,
             height: 2,
         });
@@ -214,8 +211,7 @@ mod tests {
     #[test]
     fn it_draws_overlap() {
         let mut window = Window::new(Rect {
-            row: 0,
-            column: 0,
+            coord: Coord { row: 0, col: 0 },
             width: 3,
             height: 2,
         });
@@ -234,8 +230,7 @@ mod tests {
     #[test]
     fn it_draws_within_region() {
         let mut window = Window::new(Rect {
-            row: 0,
-            column: 0,
+            coord: Coord { row: 0, col: 0 },
             width: 3,
             height: 3,
         });
@@ -273,8 +268,7 @@ mod tests {
     fn it_sets_dirty_bit() {
         let mut mock_stdout = Vec::new();
         let mut window = Window::new(Rect {
-            row: 0,
-            column: 0,
+            coord: Coord { row: 0, col: 0 },
             width: 3,
             height: 2,
         });
@@ -300,8 +294,7 @@ mod tests {
     fn it_doesnt_set_dirty_bit() {
         let mut mock_stdout = Vec::new();
         let mut window = Window::new(Rect {
-            row: 0,
-            column: 0,
+            coord: Coord { row: 0, col: 0 },
             width: 3,
             height: 2,
         });
