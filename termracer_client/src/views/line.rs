@@ -77,7 +77,7 @@ impl Line {
 }
 
 impl View for Line {
-    fn draw(&mut self, window: &mut Window) {
+    fn draw(&self, window: &mut Window) {
         for (i, c) in self.text.iter().enumerate() {
             let fg = if c.contains(char::is_whitespace) {
                 Color::White

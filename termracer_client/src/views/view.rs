@@ -2,7 +2,7 @@ use crate::window::Window;
 use crossterm::event::KeyEvent;
 
 pub trait View {
-    fn draw(&mut self, window: &mut Window);
+    fn draw(&self, window: &mut Window);
     fn get_region_index(&self) -> usize;
 }
 

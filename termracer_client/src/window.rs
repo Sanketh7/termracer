@@ -158,6 +158,14 @@ impl Window {
         }
     }
 
+    pub fn regions(&self) -> &Vec<Rect> {
+        self.layout.regions()
+    }
+
+    pub fn region(&self, region_index: usize) -> Option<&Rect> {
+        self.layout.region(region_index)
+    }
+
     fn check_coord(&self, region_row: u16, region_column: u16, region_index: usize) -> bool {
         let region_bounds = self
             .layout

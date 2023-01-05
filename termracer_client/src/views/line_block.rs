@@ -62,8 +62,8 @@ impl LineBlock {
 }
 
 impl View for LineBlock {
-    fn draw(&mut self, window: &mut Window) {
-        for line in &mut self.lines {
+    fn draw(&self, window: &mut Window) {
+        for line in &self.lines {
             line.draw(window);
         }
     }

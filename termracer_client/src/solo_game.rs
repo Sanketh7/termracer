@@ -7,6 +7,7 @@ use crate::{
     layout::HorizontalSplitKind,
     views::{
         line_block::LineBlock,
+        progress_bar::ProgressBar,
         stats_line::StatsLine,
         view::{KeyEventHandleable, View},
     },
@@ -23,6 +24,7 @@ struct UI {
     // views
     line_block: LineBlock,
     stats_line: StatsLine,
+    progress_bar: ProgressBar,
 }
 
 pub struct SoloGame {
@@ -31,24 +33,31 @@ pub struct SoloGame {
 
 impl SoloGame {
     pub fn new() -> Self {
-        let text = "A lot of sample text oh boy\n".repeat(49).to_owned();
+        let text = "A lot of sample text oh boy\n".repeat(3).to_owned();
         let text_lines = text
             .split('\n')
             .map(|line| line.graphemes(true).map(String::from).collect())
             .collect();
+
         let (term_width, term_height) =
             terminal::size().expect("ERROR: Failed to get terminal size.");
         let mut window = Window::new(term_width, term_height);
-        let (line_block_region, stats_line_region) =
-            window.horizontal_split(HorizontalSplitKind::CellsInBottom(1), 0);
+
+        let (line_block_region, bottom_region) =
+            window.horizontal_split(HorizontalSplitKind::CellsInBottom(2), 0);
+        let (stats_line_region, progress_bar_region) =
+            window.horizontal_split(HorizontalSplitKind::CellsInBottom(1), bottom_region);
+
         let line_block = LineBlock::new(text_lines, line_block_region);
         let stats_line = StatsLine::new(stats_line_region);
+        let progress_bar = ProgressBar::new(progress_bar_region);
 
         SoloGame {
             ui: UI {
                 window,
                 line_block,
                 stats_line,
+                progress_bar,
             },
         }
     }
@@ -74,12 +83,13 @@ impl SoloGame {
                 wpm += 10.0;
                 self.ui.stats_line.set_wpm(wpm);
                 self.ui
-                    .stats_line
+                    .progress_bar
                     .set_progress(self.ui.line_block.progress());
 
                 // draw to window
                 self.ui.line_block.draw(&mut self.ui.window);
                 self.ui.stats_line.draw(&mut self.ui.window);
+                self.ui.progress_bar.draw(&mut self.ui.window);
                 self.ui.line_block.reset_cursor(&mut self.ui.window);
 
                 // display window on screen
