@@ -8,6 +8,7 @@ mod rect;
 mod solo_game;
 mod views;
 mod window;
+mod throttler;
 
 fn main() {
     let mut buf = io::stdout();
@@ -16,7 +17,7 @@ fn main() {
     terminal::enable_raw_mode().expect("ERROR: Failed to enable raw mode.");
 
     let mut game = SoloGame::new();
-    game.game_loop(&mut buf, Duration::from_millis(200));
+    game.game_loop(&mut buf, Duration::from_millis(1000 / 30));
 
     terminal::disable_raw_mode().expect("ERROR: Failed to disable raw mode.");
     execute!(buf, terminal::LeaveAlternateScreen)

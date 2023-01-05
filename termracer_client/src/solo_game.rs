@@ -1,5 +1,5 @@
 use std::{
-    io::{self, Write},
+    io::Write,
     time::{Duration, Instant},
 };
 
@@ -11,7 +11,7 @@ use crate::{
         stats_line::StatsLine,
         view::{KeyEventHandleable, View},
     },
-    window::Window,
+    window::Window, throttler::Throttler,
 };
 use crossterm::{
     event::{self, Event, KeyCode},
@@ -65,6 +65,8 @@ impl SoloGame {
     pub fn game_loop<T: Write>(&mut self, buf: &mut T, poll_duration: Duration) {
         let start_instant = Instant::now();
 
+        let mut throttler = Throttler::new(20);
+
         loop {
             if event::poll(poll_duration).expect("ERROR: Failed to poll event.") {
                 match event::read().expect("ERROR: Failed to read event.") {
@@ -89,8 +91,10 @@ impl SoloGame {
 
                 // draw to window
                 self.ui.line_block.draw(&mut self.ui.window);
-                self.ui.stats_line.draw(&mut self.ui.window);
-                self.ui.progress_bar.draw(&mut self.ui.window);
+                throttler.try_run(|| {
+                    self.ui.stats_line.draw(&mut self.ui.window);
+                    self.ui.progress_bar.draw(&mut self.ui.window);
+                });
                 self.ui.line_block.reset_cursor(&mut self.ui.window);
 
                 // display window on screen
