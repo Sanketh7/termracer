@@ -2,14 +2,12 @@ use super::{
     line::Line,
     view::{KeyEventHandleable, View},
 };
-use crate::window::{self, Window};
+use crate::window::Window;
 use crossterm::event::{KeyCode, KeyEvent};
-use std::io::Write;
 
 struct State {
     // index of current line
     index: usize,
-    correct: Vec<bool>,
 }
 
 pub struct LineBlock {
@@ -28,10 +26,7 @@ impl LineBlock {
                 .map(|(line_index, text)| Line::new(text, region_index, line_index))
                 .collect(),
             region_index,
-            state: State {
-                index: 0,
-                correct: vec![false; length],
-            },
+            state: State { index: 0 },
         }
     }
 
@@ -43,13 +38,23 @@ impl LineBlock {
         }
     }
 
-    pub fn is_correct(&self) -> bool {
-        self.state.correct.iter().all(|&x| x)
+    pub fn done(&self) -> bool {
+        let (correct, total) = self.progress();
+        correct == total
+    }
+
+    pub fn progress(&self) -> (usize, usize) {
+        self.lines
+            .iter()
+            .map(|line| line.progress())
+            .fold((0, 0), |acc, (correct, total)| {
+                (acc.0 + correct, acc.1 + total)
+            })
     }
 
     fn process_enter(&mut self) {
         if let Some(line) = self.lines.get_mut(self.state.index) {
-            if line.is_correct() {
+            if line.done() {
                 self.state.index += 1;
             }
         }

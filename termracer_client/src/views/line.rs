@@ -4,7 +4,6 @@ use crossterm::{
     event::{KeyCode, KeyEvent},
     style::Color,
 };
-use std::io::Write;
 
 struct State {
     // index of current char to be inputted
@@ -43,8 +42,20 @@ impl Line {
         );
     }
 
-    pub fn is_correct(&self) -> bool {
-        self.state.correct.iter().all(|&x| x == Some(true))
+    pub fn done(&self) -> bool {
+        let (correct, total) = self.progress();
+        correct == total
+    }
+
+    pub fn progress(&self) -> (usize, usize) {
+        let correct = self
+            .state
+            .correct
+            .iter()
+            .filter(|&x| x == &Some(true))
+            .count();
+        let total = self.text.len();
+        (correct, total)
     }
 
     fn process_character(&mut self, c: char) {
@@ -185,17 +196,17 @@ mod tests {
         line.process_character('t');
         line.process_character('t');
 
-        assert!(!line.is_correct());
+        assert!(!line.done());
 
         line.process_backspace();
         line.process_backspace();
         line.process_character('x');
         line.process_character('t');
 
-        assert!(line.is_correct());
+        assert!(line.done());
 
         line.process_character('z');
 
-        assert!(line.is_correct());
+        assert!(line.done());
     }
 }

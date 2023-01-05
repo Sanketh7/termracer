@@ -73,6 +73,9 @@ impl SoloGame {
                 // update state
                 wpm += 10.0;
                 self.ui.stats_line.set_wpm(wpm);
+                self.ui
+                    .stats_line
+                    .set_progress(self.ui.line_block.progress());
 
                 // draw to window
                 self.ui.line_block.draw(&mut self.ui.window);
