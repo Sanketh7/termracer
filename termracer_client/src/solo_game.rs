@@ -33,7 +33,7 @@ pub struct SoloGame {
 
 impl SoloGame {
     pub fn new() -> Self {
-        let text = "A lot of sample text oh boy\n".repeat(3).to_owned();
+        let text = "A lot of sample text oh boy\n".repeat(10).to_owned();
         let text_lines = text
             .split('\n')
             .map(|line| line.graphemes(true).map(String::from).collect())

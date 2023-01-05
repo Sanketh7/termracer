@@ -18,7 +18,6 @@ pub struct LineBlock {
 
 impl LineBlock {
     pub fn new(text_lines: Vec<Vec<String>>, region_index: usize) -> Self {
-        let length = text_lines.len();
         LineBlock {
             lines: text_lines
                 .into_iter()

@@ -16,7 +16,7 @@ fn main() {
     terminal::enable_raw_mode().expect("ERROR: Failed to enable raw mode.");
 
     let mut game = SoloGame::new();
-    game.game_loop(&mut buf, Duration::from_nanos(10));
+    game.game_loop(&mut buf, Duration::from_millis(35));
 
     terminal::disable_raw_mode().expect("ERROR: Failed to disable raw mode.");
     execute!(buf, terminal::LeaveAlternateScreen)

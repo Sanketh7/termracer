@@ -3,11 +3,11 @@ use crate::{
     rect::{Coord, Rect},
 };
 use crossterm::{
-    cursor,
+    cursor, queue,
     style::{self, Color, Stylize},
     QueueableCommand,
 };
-use std::io::Write;
+use std::io::{self, Write};
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
@@ -182,6 +182,13 @@ impl Window {
     }
 
     pub fn display<T: Write>(&mut self, buf: &mut T) {
+        let prev_coord: Option<Coord> = None;
+        let prev_fg: Option<Color> = None;
+        let prev_bg: Option<Color> = None;
+
+        let handle_error =
+            |res: Result<(), io::Error>| res.expect("ERROR: Failed to display cells.");
+
         for row in 0..self.bounds.height {
             for col in 0..self.bounds.width {
                 if self.dirty[row as usize][col as usize] {
@@ -189,16 +196,26 @@ impl Window {
                     self.dirty[row as usize][col as usize] = false;
 
                     let cell = &self.buffer[row as usize][col as usize];
-                    buf.queue(cursor::MoveTo(
-                        col + self.bounds.coord.col,
-                        row + self.bounds.coord.row,
-                    ))
-                    .and_then(|buf| {
-                        buf.queue(style::PrintStyledContent(
-                            (&cell.c[..]).with(cell.fg).on(cell.bg),
-                        ))
-                    })
-                    .expect("ERROR: Failed to draw cell.");
+
+                    if prev_coord.is_none()
+                        || row != prev_coord.unwrap().row
+                        || col != prev_coord.unwrap().col + 1
+                    {
+                        handle_error(queue!(
+                            buf,
+                            cursor::MoveTo(
+                                col + self.bounds.coord.col,
+                                row + self.bounds.coord.row
+                            )
+                        ));
+                    }
+                    if prev_fg.is_none() || cell.fg != prev_fg.unwrap() {
+                        handle_error(queue!(buf, style::SetForegroundColor(cell.fg)));
+                    }
+                    if prev_bg.is_none() || cell.bg != prev_bg.unwrap() {
+                        handle_error(queue!(buf, style::SetBackgroundColor(cell.bg)));
+                    }
+                    handle_error(queue!(buf, style::Print(&cell.c)));
                 }
             }
         }
