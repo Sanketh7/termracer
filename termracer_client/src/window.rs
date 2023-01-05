@@ -11,7 +11,7 @@ use std::io::{self, Write};
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
-#[derive(Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 struct Cell {
     c: String,
     fg: Color,
@@ -147,7 +147,7 @@ impl Window {
             .region(region_index)
             .expect("ERROR: Failed to clear region -- invalid region index.");
         let clear_text = " ".repeat(region_bounds.width as usize);
-        for row in region_bounds.coord.row..(region_bounds.coord.row + region_bounds.height) {
+        for row in 0..region_bounds.height {
             self.draw(
                 &clear_text,
                 Color::Reset,

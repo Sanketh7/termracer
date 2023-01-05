@@ -1,6 +1,6 @@
 use std::{
     io::{self, Write},
-    time::Duration,
+    time::{Duration, Instant},
 };
 
 use crate::{
@@ -63,7 +63,7 @@ impl SoloGame {
     }
 
     pub fn game_loop<T: Write>(&mut self, buf: &mut T, poll_duration: Duration) {
-        let mut wpm = 0.0;
+        let start_instant = Instant::now();
 
         loop {
             if event::poll(poll_duration).expect("ERROR: Failed to poll event.") {
@@ -80,11 +80,12 @@ impl SoloGame {
                 }
             } else {
                 // update state
-                wpm += 10.0;
+                let progress = self.ui.line_block.progress();
+                let wpm = (progress.0 as f32) / 5.0 / (start_instant.elapsed().as_secs_f32() / 60.0);
                 self.ui.stats_line.set_wpm(wpm);
                 self.ui
                     .progress_bar
-                    .set_progress(self.ui.line_block.progress());
+                    .set_progress(progress);
 
                 // draw to window
                 self.ui.line_block.draw(&mut self.ui.window);
