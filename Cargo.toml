@@ -1,11 +1,6 @@
-[package]
-name = "termracer"
-version = "0.1.0"
-edition = "2021"
+[workspace]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
-crossterm = "0.23"
-rand = "0.8.4"
-ascii = "1.0"
+members = [
+    "termracer_client",
+    "termracer_word_generator"
+]
