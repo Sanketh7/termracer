@@ -5,19 +5,25 @@ use std::{
 
 use crate::{
     layout::HorizontalSplitKind,
+    throttler::Throttler,
     views::{
         line_block::LineBlock,
         progress_bar::ProgressBar,
         stats_line::StatsLine,
         view::{KeyEventHandleable, View},
     },
-    window::Window, throttler::Throttler,
+    window::Window,
 };
 use crossterm::{
     event::{self, Event, KeyCode},
-    terminal,
+    execute, terminal,
 };
 use unicode_segmentation::UnicodeSegmentation;
+
+pub enum SoloGameResults {
+    Completed { wpm: f32 },
+    Aborted,
+}
 
 struct UI {
     window: Window,
@@ -62,7 +68,21 @@ impl SoloGame {
         }
     }
 
-    pub fn game_loop<T: Write>(&mut self, buf: &mut T, poll_duration: Duration) {
+    pub fn run<T: Write>(&mut self, buf: &mut T, poll_duration: Duration) -> SoloGameResults {
+        execute!(buf, terminal::EnterAlternateScreen)
+            .expect("ERROR: Failed to enter alternate screen.");
+        terminal::enable_raw_mode().expect("ERROR: Failed to enable raw mode.");
+
+        let game_results = self.game_loop(buf, poll_duration);
+
+        terminal::disable_raw_mode().expect("ERROR: Failed to disable raw mode.");
+        execute!(buf, terminal::LeaveAlternateScreen)
+            .expect("ERROR: Failed to leave alternate screen.");
+
+        game_results
+    }
+
+    fn game_loop<T: Write>(&mut self, buf: &mut T, poll_duration: Duration) -> SoloGameResults {
         let start_instant = Instant::now();
 
         let mut throttler = Throttler::new(20);
@@ -71,7 +91,7 @@ impl SoloGame {
             if event::poll(poll_duration).expect("ERROR: Failed to poll event.") {
                 match event::read().expect("ERROR: Failed to read event.") {
                     Event::Key(key_event) => match key_event.code {
-                        KeyCode::Esc => break,
+                        KeyCode::Esc => return SoloGameResults::Aborted,
                         _ => self.ui.line_block.handle_key_event(key_event),
                     },
                     Event::Resize(width, height) => {
@@ -83,11 +103,13 @@ impl SoloGame {
             } else {
                 // update state
                 let progress = self.ui.line_block.progress();
-                let wpm = (progress.0 as f32) / 5.0 / (start_instant.elapsed().as_secs_f32() / 60.0);
+                let wpm =
+                    (progress.0 as f32) / 5.0 / (start_instant.elapsed().as_secs_f32() / 60.0);
+                if self.ui.line_block.done() {
+                    return SoloGameResults::Completed { wpm };
+                }
                 self.ui.stats_line.set_wpm(wpm);
-                self.ui
-                    .progress_bar
-                    .set_progress(progress);
+                self.ui.progress_bar.set_progress(progress);
 
                 // draw to window
                 self.ui.line_block.draw(&mut self.ui.window);

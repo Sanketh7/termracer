@@ -4,7 +4,7 @@ use crate::{
 };
 use crossterm::{
     cursor, queue,
-    style::{self, Color, Stylize},
+    style::{self, Color},
     QueueableCommand,
 };
 use std::io::{self, Write};
