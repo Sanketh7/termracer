@@ -12,6 +12,7 @@ pub fn generate_words(count: usize) -> Vec<String> {
     let mut rng = rand::thread_rng();
     let dist = Uniform::from(0..WORDS.len());
 
-    (0..count).map(|_| WORDS.get(dist.sample(&mut rng)).unwrap().clone()).collect()
+    (0..count)
+        .map(|_| WORDS.get(dist.sample(&mut rng)).unwrap().clone())
+        .collect()
 }
-

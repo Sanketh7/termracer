@@ -40,24 +40,20 @@ pub struct SoloGame {
 }
 
 impl SoloGame {
-    pub fn new(words_count: usize) -> Self {
-        // let text = "A lot of sample text oh boy\n".repeat(10).to_owned();
-        // let text_lines = text
-        //     .split('\n')
-        //     .map(|line| line.graphemes(true).map(String::from).collect())
-        //     .collect();
+    pub fn new(word_count: usize) -> Self {
         let (term_width, term_height) =
             terminal::size().expect("ERROR: Failed to get terminal size.");
 
-        const AVG_WORD_LENGTH: usize = 5 + 1; // add 1 to account for whitespace
-                                              // line block takes up the entire terminal width
-                                              // scale down to give breathing room
-        let words_per_line = ((term_width / AVG_WORD_LENGTH as u16) as f32 * 0.75) as usize;
-        let all_words = word_generator::generate_words(words_count);
-        let text_lines: Vec<Vec<String>> = (0..words_count)
+        // add 1 to account for whitespace
+        const AVG_WORD_LENGTH: usize = 5 + 1;
+        // line block takes up the entire terminal width
+        // scale down to give breathing room
+        let words_per_line = ((term_width / AVG_WORD_LENGTH as u16) as f32 * 0.6) as usize;
+        let all_words = word_generator::generate_words(word_count);
+        let text_lines: Vec<Vec<String>> = (0..word_count)
             .step_by(words_per_line)
             .map(|i| {
-                all_words[i..cmp::min(i + words_per_line, words_count)]
+                all_words[i..cmp::min(i + words_per_line, word_count)]
                     .join(" ")
                     .graphemes(true)
                     .map(String::from)

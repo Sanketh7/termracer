@@ -10,3 +10,6 @@ termracer_word_generator = { path = "../termracer_word_generator" }
 crossterm = "0.25"
 unicode-segmentation = "1.10.0"
 unicode-width = "0.1.10"
+strum = "0.24"
+strum_macros = "0.24"
+lazy_static = "1.4.0"
