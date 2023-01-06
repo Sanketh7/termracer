@@ -1,4 +1,5 @@
 use std::{
+    cmp,
     io::Write,
     time::{Duration, Instant},
 };
@@ -18,6 +19,7 @@ use crossterm::{
     event::{self, Event, KeyCode},
     execute, terminal,
 };
+use termracer_word_generator::word_generator;
 use unicode_segmentation::UnicodeSegmentation;
 
 pub enum SoloGameResults {
@@ -38,17 +40,32 @@ pub struct SoloGame {
 }
 
 impl SoloGame {
-    pub fn new() -> Self {
-        let text = "A lot of sample text oh boy\n".repeat(10).to_owned();
-        let text_lines = text
-            .split('\n')
-            .map(|line| line.graphemes(true).map(String::from).collect())
-            .collect();
-
+    pub fn new(words_count: usize) -> Self {
+        // let text = "A lot of sample text oh boy\n".repeat(10).to_owned();
+        // let text_lines = text
+        //     .split('\n')
+        //     .map(|line| line.graphemes(true).map(String::from).collect())
+        //     .collect();
         let (term_width, term_height) =
             terminal::size().expect("ERROR: Failed to get terminal size.");
-        let mut window = Window::new(term_width, term_height);
 
+        const AVG_WORD_LENGTH: usize = 5 + 1; // add 1 to account for whitespace
+                                              // line block takes up the entire terminal width
+                                              // scale down to give breathing room
+        let words_per_line = ((term_width / AVG_WORD_LENGTH as u16) as f32 * 0.75) as usize;
+        let all_words = word_generator::generate_words(words_count);
+        let text_lines: Vec<Vec<String>> = (0..words_count)
+            .step_by(words_per_line)
+            .map(|i| {
+                all_words[i..cmp::min(i + words_per_line, words_count)]
+                    .join(" ")
+                    .graphemes(true)
+                    .map(String::from)
+                    .collect()
+            })
+            .collect();
+
+        let mut window = Window::new(term_width, term_height);
         let (line_block_region, bottom_region) =
             window.horizontal_split(HorizontalSplitKind::CellsInBottom(2), 0);
         let (stats_line_region, progress_bar_region) =

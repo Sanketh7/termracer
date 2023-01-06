@@ -13,7 +13,7 @@ mod window;
 fn main() {
     let mut buf = io::stdout().lock();
 
-    let mut game = SoloGame::new();
+    let mut game = SoloGame::new(25);
     let game_results = game.run(&mut buf, Duration::from_millis(1000 / 30));
 
     let end_text = match game_results {

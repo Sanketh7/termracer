@@ -1,5 +1,6 @@
 [workspace]
 
 members = [
-    "termracer_client"
+    "termracer_client",
+    "termracer_word_generator"
 ]
