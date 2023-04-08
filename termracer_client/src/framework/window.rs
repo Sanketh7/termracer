@@ -98,6 +98,7 @@ impl Window {
     self.cursor_pos = region.coord + region_coord;
   }
 
+  #[allow(dead_code)] 
   pub fn vertical_split(
     &mut self,
     split: VerticalSplitKind,
@@ -148,10 +149,6 @@ impl Window {
         region_index,
       );
     }
-  }
-
-  pub fn regions(&self) -> &Vec<Rect> {
-    self.layout.regions()
   }
 
   pub fn region(&self, region_index: usize) -> Option<&Rect> {

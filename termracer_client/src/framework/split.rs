@@ -1,3 +1,4 @@
+#[allow(dead_code)]
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum HorizontalSplitKind {
   CellsInTop(u16),
@@ -6,6 +7,7 @@ pub enum HorizontalSplitKind {
   PercentInBottom(u8),
 }
 
+#[allow(dead_code)]
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum VerticalSplitKind {
   CellsInLeft(u16),
@@ -14,6 +16,7 @@ pub enum VerticalSplitKind {
   PercentInRight(u8),
 }
 
+#[allow(dead_code)]
 #[derive(Debug, PartialEq, Eq)]
 pub enum SplitNode {
   Vertical {
