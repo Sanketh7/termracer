@@ -4,6 +4,7 @@ use crossterm::style::Color;
 use super::view::{KeyEventHandleable, View};
 use crate::framework::coord::Coord;
 use crate::framework::window::Window;
+use crate::models::progress::Progress;
 
 struct State {
   // index of current char to be inputted
@@ -43,19 +44,33 @@ impl Line {
   }
 
   pub fn done(&self) -> bool {
-    let (correct, total) = self.progress();
+    let Progress {
+      correct,
+      incorrect: _,
+      total,
+    } = self.progress();
     correct == total
   }
 
-  pub fn progress(&self) -> (usize, usize) {
+  pub fn progress(&self) -> Progress {
     let correct = self
       .state
       .correct
       .iter()
       .filter(|&x| x == &Some(true))
       .count();
+    let incorrect = self
+      .state
+      .correct
+      .iter()
+      .filter(|&x| x == &Some(false))
+      .count();
     let total = self.text.len();
-    (correct, total)
+    Progress {
+      correct,
+      incorrect,
+      total,
+    }
   }
 
   fn process_character(&mut self, c: char) {

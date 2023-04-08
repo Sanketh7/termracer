@@ -16,6 +16,8 @@ use crate::views::progress_bar::ProgressBar;
 use crate::views::stats_line::StatsLine;
 use crate::views::view::{KeyEventHandleable, View};
 
+const AVERAGE_WORD_LENGTH: usize = 5;
+
 struct UI {
   window: Window,
   // views
@@ -32,11 +34,10 @@ impl SoloGame {
   pub fn new(word_count: usize) -> Self {
     let (term_width, term_height) = terminal::size().expect("ERROR: Failed to get terminal size.");
 
-    // add 1 to account for whitespace
-    const AVG_WORD_LENGTH: usize = 5 + 1;
     // line block takes up the entire terminal width
     // scale down to give breathing room
-    let words_per_line = ((term_width / AVG_WORD_LENGTH as u16) as f32 * 0.6) as usize;
+    // add 1 to account for whitespace
+    let words_per_line = ((term_width / (AVERAGE_WORD_LENGTH + 1) as u16) as f32 * 0.6) as usize;
     let all_words = word_generator::generate_words(word_count);
     let text_lines: Vec<Vec<String>> = (0..word_count)
       .step_by(words_per_line)
@@ -104,7 +105,9 @@ impl SoloGame {
       } else {
         // update state
         let progress = self.ui.line_block.progress();
-        let wpm = (progress.0 as f32) / 5.0 / (start_instant.elapsed().as_secs_f32() / 60.0);
+        let wpm = (progress.correct as f32)
+          / (AVERAGE_WORD_LENGTH as f32)
+          / (start_instant.elapsed().as_secs_f32() / 60.0);
         if self.ui.line_block.done() {
           return GameResult::Completed { wpm };
         }
