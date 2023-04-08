@@ -98,7 +98,7 @@ impl Window {
     self.cursor_pos = region.coord + region_coord;
   }
 
-  #[allow(dead_code)] 
+  #[allow(dead_code)]
   pub fn vertical_split(
     &mut self,
     split: VerticalSplitKind,

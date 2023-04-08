@@ -3,6 +3,7 @@ use crossterm::event::{KeyCode, KeyEvent};
 use super::line::Line;
 use super::view::{KeyEventHandleable, View};
 use crate::framework::window::Window;
+use crate::models::progress::Progress;
 
 struct State {
   // index of current line
@@ -37,18 +38,23 @@ impl LineBlock {
   }
 
   pub fn done(&self) -> bool {
-    let (correct, total) = self.progress();
+    let Progress {
+      correct,
+      incorrect: _,
+      total,
+    } = self.progress();
     correct == total
   }
 
-  pub fn progress(&self) -> (usize, usize) {
-    self
-      .lines
-      .iter()
-      .map(|line| line.progress())
-      .fold((0, 0), |acc, (correct, total)| {
-        (acc.0 + correct, acc.1 + total)
-      })
+  pub fn progress(&self) -> Progress {
+    self.lines.iter().map(|line| line.progress()).fold(
+      Progress {
+        correct: 0,
+        incorrect: 0,
+        total: 0,
+      },
+      |acc, progress| acc + progress,
+    )
   }
 
   fn process_enter(&mut self) {
