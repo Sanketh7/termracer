@@ -9,7 +9,7 @@ pub enum Command {
   )]
   Start(usize),
 
-  #[strum(message = "quit", detailed_message = "Quit TermRacer.")]
+  #[strum(message = "quit | exit", detailed_message = "Quit TermRacer.")]
   Quit,
 
   #[strum(message = "help", detailed_message = "Print this help text.")]
@@ -42,7 +42,7 @@ pub fn parse(s: &str) -> Option<Command> {
         .map(|word_count| Command::Start(word_count)),
       None => None,
     },
-    Some(&"quit") => Some(Command::Quit),
+    Some(&"quit") | Some(&"exit") => Some(Command::Quit),
     Some(&"help") => Some(Command::Help),
     _ => None,
   }
