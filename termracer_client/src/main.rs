@@ -1,20 +1,21 @@
 #[macro_use]
 extern crate lazy_static;
 
-use crossterm::{execute, style, ExecutableCommand};
-use solo_game::{SoloGame, SoloGameResults};
 use std::io::{self, Write};
 use std::time::Duration;
 
-use crate::command::Command;
+use crossterm::{execute, style};
 
-mod command;
-mod layout;
-mod rect;
-mod solo_game;
-mod throttler;
+use crate::game::solo_game::SoloGame;
+use crate::models::game_result::GameResult;
+use crate::util::command;
+use crate::util::command::Command;
+
+mod framework;
+mod game;
+mod models;
+mod util;
 mod views;
-mod window;
 
 fn main() {
   loop {
@@ -35,8 +36,8 @@ fn main() {
         let game_results = game.run(&mut buf, Duration::from_millis(1000 / 30));
 
         let end_text = match game_results {
-          SoloGameResults::Completed { wpm } => format!("WPM: {}\n", wpm as u32),
-          SoloGameResults::Aborted => "Aborted!\n".to_string(),
+          GameResult::Completed { wpm } => format!("WPM: {}\n", wpm as u32),
+          GameResult::Aborted => "Aborted!\n".to_string(),
         };
         execute!(buf, style::Print(end_text)).expect("ERROR: Failed to print end text.");
       }

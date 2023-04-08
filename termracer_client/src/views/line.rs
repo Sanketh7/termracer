@@ -1,9 +1,9 @@
+use crossterm::event::{KeyCode, KeyEvent};
+use crossterm::style::Color;
+
 use super::view::{KeyEventHandleable, View};
-use crate::{rect::Coord, window::Window};
-use crossterm::{
-  event::{KeyCode, KeyEvent},
-  style::Color,
-};
+use crate::framework::coord::Coord;
+use crate::framework::window::Window;
 
 struct State {
   // index of current char to be inputted
@@ -128,8 +128,9 @@ impl KeyEventHandleable for Line {
 
 #[cfg(test)]
 mod tests {
-  use super::Line;
   use unicode_segmentation::UnicodeSegmentation;
+
+  use super::Line;
 
   #[test]
   fn it_processes_characters() {

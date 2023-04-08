@@ -1,7 +1,8 @@
 use crossterm::style::Color;
 
 use super::view::View;
-use crate::{rect::Coord, window::Window};
+use crate::framework::coord::Coord;
+use crate::framework::window::Window;
 
 const BAR_SYMBOL: &str = "░";
 
