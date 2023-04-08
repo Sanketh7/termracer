@@ -1,6 +1,8 @@
-use super::view::View;
-use crate::{rect::Coord, window::Window};
 use crossterm::style::Color;
+
+use super::view::View;
+use crate::framework::coord::Coord;
+use crate::framework::window::Window;
 
 macro_rules! STATS_LINE_FORMAT_STRING {
   () => {

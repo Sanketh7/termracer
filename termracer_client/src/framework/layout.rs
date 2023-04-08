@@ -1,35 +1,5 @@
-use crate::rect::Rect;
-
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
-pub enum HorizontalSplitKind {
-  CellsInTop(u16),
-  CellsInBottom(u16),
-  PercentInTop(u8),
-  PercentInBottom(u8),
-}
-
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
-pub enum VerticalSplitKind {
-  CellsInLeft(u16),
-  CellsInRight(u16),
-  PercentInLeft(u8),
-  PercentInRight(u8),
-}
-
-#[derive(Debug, PartialEq, Eq)]
-pub enum SplitNode {
-  Vertical {
-    kind: VerticalSplitKind,
-    left: Box<SplitNode>,
-    right: Box<SplitNode>,
-  },
-  Horizontal {
-    kind: HorizontalSplitKind,
-    top: Box<SplitNode>,
-    bottom: Box<SplitNode>,
-  },
-  Leaf(usize),
-}
+use super::rect::Rect;
+use super::split::{HorizontalSplitKind, SplitNode, VerticalSplitKind};
 
 pub struct Layout {
   split_tree: SplitNode,
@@ -164,10 +134,10 @@ impl Layout {
 
 #[cfg(test)]
 mod tests {
-  use crate::{
-    layout::{HorizontalSplitKind, Layout, SplitNode, VerticalSplitKind},
-    rect::{Coord, Rect},
-  };
+  use super::super::coord::Coord;
+  use super::super::layout::Layout;
+  use super::super::rect::Rect;
+  use super::super::split::{HorizontalSplitKind, SplitNode, VerticalSplitKind};
 
   #[test]
   fn it_splits_vertically() {

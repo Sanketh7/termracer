@@ -1,9 +1,8 @@
-use super::{
-  line::Line,
-  view::{KeyEventHandleable, View},
-};
-use crate::window::Window;
 use crossterm::event::{KeyCode, KeyEvent};
+
+use super::line::Line;
+use super::view::{KeyEventHandleable, View};
+use crate::framework::window::Window;
 
 struct State {
   // index of current line
@@ -88,10 +87,11 @@ impl KeyEventHandleable for LineBlock {
 
 #[cfg(test)]
 mod tests {
-  use super::LineBlock;
-  use crate::views::view::KeyEventHandleable;
   use crossterm::event::{KeyCode, KeyEvent, KeyEventKind, KeyEventState, KeyModifiers};
   use unicode_segmentation::UnicodeSegmentation;
+
+  use super::LineBlock;
+  use crate::views::view::KeyEventHandleable;
 
   fn create_char_key_event(code: KeyCode) -> KeyEvent {
     KeyEvent {

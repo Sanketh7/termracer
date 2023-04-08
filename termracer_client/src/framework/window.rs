@@ -1,15 +1,14 @@
-use crate::{
-  layout::{HorizontalSplitKind, Layout, VerticalSplitKind},
-  rect::{Coord, Rect},
-};
-use crossterm::{
-  cursor, queue,
-  style::{self, Color},
-  QueueableCommand,
-};
 use std::io::{self, Write};
+
+use crossterm::style::{self, Color};
+use crossterm::{cursor, queue, QueueableCommand};
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
+
+use super::coord::Coord;
+use super::layout::Layout;
+use super::rect::Rect;
+use super::split::{HorizontalSplitKind, VerticalSplitKind};
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 struct Cell {
@@ -215,12 +214,11 @@ impl Window {
 
 #[cfg(test)]
 mod tests {
-  use crate::{
-    layout::{HorizontalSplitKind, VerticalSplitKind},
-    rect::Coord,
-    window::Window,
-  };
   use crossterm::style::Color;
+
+  use super::super::coord::Coord;
+  use super::super::split::{HorizontalSplitKind, VerticalSplitKind};
+  use super::super::window::Window;
 
   #[test]
   fn it_draws_within_window() {

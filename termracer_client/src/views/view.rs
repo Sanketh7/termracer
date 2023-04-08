@@ -1,5 +1,6 @@
-use crate::window::Window;
 use crossterm::event::KeyEvent;
+
+use crate::framework::window::Window;
 
 pub trait View {
   fn draw(&self, window: &mut Window);

@@ -1,31 +1,20 @@
-use std::{
-  cmp,
-  io::Write,
-  time::{Duration, Instant},
-};
+use std::cmp;
+use std::io::Write;
+use std::time::{Duration, Instant};
 
-use crate::{
-  layout::HorizontalSplitKind,
-  throttler::Throttler,
-  views::{
-    line_block::LineBlock,
-    progress_bar::ProgressBar,
-    stats_line::StatsLine,
-    view::{KeyEventHandleable, View},
-  },
-  window::Window,
-};
-use crossterm::{
-  event::{self, Event, KeyCode},
-  execute, terminal,
-};
+use crossterm::event::{self, Event, KeyCode};
+use crossterm::{execute, terminal};
 use termracer_word_generator::word_generator;
 use unicode_segmentation::UnicodeSegmentation;
 
-pub enum SoloGameResults {
-  Completed { wpm: f32 },
-  Aborted,
-}
+use crate::framework::split::HorizontalSplitKind;
+use crate::framework::window::Window;
+use crate::models::game_result::GameResult;
+use crate::util::throttler::Throttler;
+use crate::views::line_block::LineBlock;
+use crate::views::progress_bar::ProgressBar;
+use crate::views::stats_line::StatsLine;
+use crate::views::view::{KeyEventHandleable, View};
 
 struct UI {
   window: Window,
@@ -80,7 +69,7 @@ impl SoloGame {
     }
   }
 
-  pub fn run<T: Write>(&mut self, buf: &mut T, poll_duration: Duration) -> SoloGameResults {
+  pub fn run<T: Write>(&mut self, buf: &mut T, poll_duration: Duration) -> GameResult {
     execute!(buf, terminal::EnterAlternateScreen)
       .expect("ERROR: Failed to enter alternate screen.");
     terminal::enable_raw_mode().expect("ERROR: Failed to enable raw mode.");
@@ -94,7 +83,7 @@ impl SoloGame {
     game_results
   }
 
-  fn game_loop<T: Write>(&mut self, buf: &mut T, poll_duration: Duration) -> SoloGameResults {
+  fn game_loop<T: Write>(&mut self, buf: &mut T, poll_duration: Duration) -> GameResult {
     let start_instant = Instant::now();
 
     let mut throttler = Throttler::new(20);
@@ -103,7 +92,7 @@ impl SoloGame {
       if event::poll(poll_duration).expect("ERROR: Failed to poll event.") {
         match event::read().expect("ERROR: Failed to read event.") {
           Event::Key(key_event) => match key_event.code {
-            KeyCode::Esc => return SoloGameResults::Aborted,
+            KeyCode::Esc => return GameResult::Aborted,
             _ => self.ui.line_block.handle_key_event(key_event),
           },
           Event::Resize(width, height) => {
@@ -117,7 +106,7 @@ impl SoloGame {
         let progress = self.ui.line_block.progress();
         let wpm = (progress.0 as f32) / 5.0 / (start_instant.elapsed().as_secs_f32() / 60.0);
         if self.ui.line_block.done() {
-          return SoloGameResults::Completed { wpm };
+          return GameResult::Completed { wpm };
         }
         self.ui.stats_line.set_wpm(wpm);
         self.ui.progress_bar.set_progress(progress);
