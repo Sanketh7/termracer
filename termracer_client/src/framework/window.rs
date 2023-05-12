@@ -213,9 +213,7 @@ impl Window {
 mod tests {
   use crossterm::style::Color;
 
-  use super::super::coord::Coord;
-  use super::super::split::{HorizontalSplitKind, VerticalSplitKind};
-  use super::super::window::Window;
+  use super::*;
 
   #[test]
   fn it_draws_within_window() {

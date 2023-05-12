@@ -93,7 +93,7 @@ impl Rect {
 
 #[cfg(test)]
 mod tests {
-  use super::{Coord, HorizontalSplitKind, Rect, VerticalSplitKind};
+  use super::*;
 
   #[test]
   fn it_splits_vertically_by_cells() {

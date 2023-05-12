@@ -96,7 +96,7 @@ mod tests {
   use crossterm::event::{KeyCode, KeyEvent, KeyEventKind, KeyEventState, KeyModifiers};
   use unicode_segmentation::UnicodeSegmentation;
 
-  use super::LineBlock;
+  use super::*;
   use crate::views::view::KeyEventHandleable;
 
   fn create_char_key_event(code: KeyCode) -> KeyEvent {

@@ -134,10 +134,8 @@ impl Layout {
 
 #[cfg(test)]
 mod tests {
-  use super::super::coord::Coord;
-  use super::super::layout::Layout;
-  use super::super::rect::Rect;
-  use super::super::split::{HorizontalSplitKind, SplitNode, VerticalSplitKind};
+  use super::*;
+  use crate::framework::coord::Coord;
 
   #[test]
   fn it_splits_vertically() {
