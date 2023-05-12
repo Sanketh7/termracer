@@ -145,7 +145,7 @@ impl KeyEventHandleable for Line {
 mod tests {
   use unicode_segmentation::UnicodeSegmentation;
 
-  use super::Line;
+  use super::*;
 
   #[test]
   fn it_processes_characters() {
